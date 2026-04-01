@@ -62,6 +62,7 @@ export function parseLinkedInVisualSpec(responseText: string | undefined, topic:
       headline?: unknown;
       subheadline?: unknown;
       keywords?: unknown;
+      imagePlot?: unknown;
       motif?: unknown;
       palette?: {
         backgroundStart?: unknown;
@@ -76,6 +77,7 @@ export function parseLinkedInVisualSpec(responseText: string | undefined, topic:
       headline: sanitizeText(parsed.headline, fallback.headline, 58),
       subheadline: sanitizeText(parsed.subheadline, fallback.subheadline, 120),
       keywords: sanitizeKeywords(parsed.keywords, fallback.keywords),
+      imagePlot: sanitizeImagePlot(parsed.imagePlot, fallback.imagePlot),
       motif: sanitizeMotif(parsed.motif, fallback.motif),
       palette: sanitizePalette(parsed.palette, fallback.palette)
     };
@@ -97,6 +99,7 @@ function buildFallbackLinkedInVisualSpec(topic: string): LinkedInVisualSpec {
       120
     ),
     keywords: buildFallbackKeywords(normalizedTopic, motif),
+    imagePlot: buildFallbackImagePlot(normalizedTopic, motif),
     motif,
     palette
   };
@@ -143,6 +146,19 @@ function sanitizeKeywords(value: unknown, fallback: string[]): string[] {
     .slice(0, 3);
 
   return keywords.length === 3 ? keywords : fallback;
+}
+
+function sanitizeImagePlot(value: unknown, fallback: string): string {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const normalized = collapseWhitespace(value);
+  if (normalized.length < 40) {
+    return fallback;
+  }
+
+  return truncateText(normalized, 360);
 }
 
 function sanitizeMotif(value: unknown, fallback: LinkedInVisualMotif): LinkedInVisualMotif {
@@ -225,6 +241,30 @@ function inferMotif(topic: string): LinkedInVisualMotif {
   }
 
   return 'shield';
+}
+
+function buildFallbackImagePlot(topic: string, motif: LinkedInVisualMotif): string {
+  const motifPromptMap: Record<LinkedInVisualMotif, string> = {
+    shield:
+      'a luminous shield, layered security contours, subtle cyber texture, calm executive visual tone',
+    network:
+      'secure network pathways, segmented nodes, trust boundaries, architectural depth, executive cybersecurity styling',
+    continuity:
+      'resilience arcs, recovery loops, operational continuity symbolism, steady confident composition',
+    identity:
+      'identity verification cues, access pathways, trust controls, clean modern security illustration',
+    governance:
+      'governance framework shapes, decision pathways, policy alignment, strategic oversight visual language',
+    data:
+      'protected data layers, flowing information contours, classification cues, privacy-first visual storytelling',
+    incident:
+      'incident response motion, alert geometry, containment cues, measured operational urgency'
+  };
+
+  return truncateText(
+    `Create a polished LinkedIn cybersecurity image about ${topic}. Show ${motifPromptMap[motif]}. Use a premium dark navy and gold visual direction with clean lighting, no mascots, no app logo, no watermark, no extra text beyond what fits a professional social graphic, and a serious editorial design style suited for CISSP study content.`,
+    360
+  );
 }
 
 function extractFirstJsonObject(value: string | undefined): string | undefined {

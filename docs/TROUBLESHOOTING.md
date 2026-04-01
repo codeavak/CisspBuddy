@@ -31,7 +31,7 @@ If something is not working, check these first:
 ### Reinstall Command
 
 ```bash
-code --install-extension cissp-buddy-0.0.20.vsix --force
+code --install-extension cissp-buddy-0.0.21.vsix --force
 ```
 
 ## The App Opens But Responses Never Arrive
@@ -110,6 +110,8 @@ The app now requires a first-use legal acceptance before the study workflow unlo
 - click `Accept Terms And Continue`
 
 If a topic was launched from `/cissp-buddy`, it will start automatically after acceptance.
+
+If you had accepted an older version already, the app may ask again after a legal wording update because the acceptance gate is now versioned.
 
 ## PDF Export Does Not Produce A File
 

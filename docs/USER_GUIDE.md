@@ -27,6 +27,8 @@ The app opens as its own editor tab inside VS Code.
 
 Before your first study session, the app presents a required legal notice and blocks the workflow until you accept it.
 
+The app also keeps a condensed legal ribbon visible near the top of the interface after acceptance so the notice remains easy to see during normal use.
+
 The notice makes four points clear:
 
 - use of CISSP Buddy is completely at your own discretion
@@ -69,6 +71,7 @@ If a quiz question is currently waiting for your answer, the LinkedIn button cha
 When a draft is generated, the answer area shows:
 
 - a topic-specific LinkedIn image generated for the studied concept
+- an image-generation plot you can reuse in another image tool if you want alternate visuals
 - the LinkedIn post text
 - a download button for the post
 - a download button for the LinkedIn image
@@ -175,7 +178,7 @@ The draft is intended to be:
 - professional
 - LinkedIn-friendly
 - consistent with the product branding
-- paired with a branded topic image that includes CISSP Buddy identity without reusing a static banner
+- paired with a topic image and a reusable image-generation plot instead of a static logo treatment
 
 The generated post is not auto-published. Review it in the answer area, download it if you want to save it, then paste it into LinkedIn yourself.
 

@@ -41,7 +41,7 @@ If compilation fails, stop there and use [TROUBLESHOOTING.md](TROUBLESHOOTING.md
 You should see:
 
 - the branded standalone app open in its own editor tab
-- a first-use legal notice that must be accepted before the workflow unlocks
+- a visible legal notice ribbon plus a first-use legal notice that must be accepted before the workflow unlocks
 - quiz-length selection from `1` to `10`
 - the detailed wrong-answer explanation toggle
 - the prompt composer and quick prompts
@@ -66,7 +66,7 @@ cissp-buddy-<version>.vsix
 Example:
 
 ```text
-cissp-buddy-0.0.20.vsix
+cissp-buddy-0.0.21.vsix
 ```
 
 ## Installing Or Updating The Packaged Extension
@@ -80,7 +80,7 @@ code --install-extension cissp-buddy-<version>.vsix --force
 Example:
 
 ```bash
-code --install-extension cissp-buddy-0.0.20.vsix --force
+code --install-extension cissp-buddy-0.0.21.vsix --force
 ```
 
 After installation:
@@ -105,12 +105,12 @@ Before pushing a release-quality change, verify all of the following:
 - the installed extension version matches the intended release version
 - the standalone app opens from the command palette
 - `/cissp-buddy` opens the standalone app from Copilot Chat
-- the first-use legal notice appears and acceptance is required before study actions unlock
+- the legal notice is visible in the UI and first-use acceptance is required before study actions unlock
 - quiz length selection works from `1` to `10`
 - detailed wrong-answer review can be toggled on and off
 - a CISSP topic starts a guided study session
 - answering `A`, `B`, `C`, or `D` advances the quiz correctly
-- the LinkedIn draft generator produces content in the transcript with a topic-specific image and visible download buttons
+- the LinkedIn draft generator produces content in the transcript with a topic-specific image, reusable image plot, and visible download buttons
 - PDF export produces a file
 - irrelevant or unsafe prompts are rejected by the guardrails
 - documentation reflects the current behavior

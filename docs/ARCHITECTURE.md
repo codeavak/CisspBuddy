@@ -23,7 +23,7 @@ The extension uses a standard VS Code extension-host architecture:
    - maintains transcript state
    - manages the active quiz session
    - coordinates quiz turns, PDF export, LinkedIn draft generation, AI-designed visual generation, and transcript download actions
-   - enforces the first-use legal acceptance gate before study actions begin
+   - enforces the first-use legal acceptance gate before study actions begin and can require re-acceptance when legal wording changes
    - streams model output into the UI
 
 3. `src/prompts.ts`
@@ -99,7 +99,7 @@ The LinkedIn generator is intentionally separate from the quiz transcript flow:
 - it calls the model with a focused content-authoring prompt for the post
 - it calls the model again for a structured visual brief tied to the same topic
 - it stores the output as a separate `LinkedInDraft`
-- it renders the result into the transcript as a topic-specific branded image with dedicated download actions
+- it renders the result into the transcript as a topic-specific image with a reusable image-generation plot and dedicated download actions
 
 This separation helps the app support reflection and sharing without disrupting the core study experience.
 

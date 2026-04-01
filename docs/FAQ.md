@@ -41,6 +41,12 @@ The app now presents a first-use legal notice and requires acceptance before the
 - the app is intended as a review aid, not a sole study authority
 - users should confirm important concepts with multiple CISSP study sources
 
+The legal summary also remains visible in the app so it is not hidden after the initial acceptance.
+
+## Why Does The LinkedIn Draft Show An Image Plot?
+
+The app now gives the user a reusable image-generation plot for the studied topic in addition to the in-app visual. That gives users a portable prompt they can reuse in another image tool when they want alternate LinkedIn artwork without relying on a built-in app-logo treatment.
+
 ## Why Is The Study Composer Floating?
 
 The composer is a floating dock so it stays easy to reach without permanently covering the transcript. It can be collapsed when the user wants maximum reading space, which is especially helpful on lower-resolution or shorter screens.

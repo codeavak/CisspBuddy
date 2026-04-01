@@ -21,8 +21,9 @@ Johnny Avakian's CISSP Buddy is a mission-driven Visual Studio Code study compan
 - LinkedIn draft controls available both in the LinkedIn panel and directly in the floating composer
 - Quiz-aware LinkedIn controls that tell the user to answer the current question before drafting a post
 - Transcript-based LinkedIn draft cards that show the generated post alongside an AI-designed topic graphic
+- A reusable LinkedIn image-generation plot for the same topic so users can generate alternate visuals elsewhere
 - Download actions for both the generated LinkedIn post and the generated LinkedIn image
-- First-use legal notice with required acceptance before the study workflow unlocks
+- Always-visible legal notice plus a versioned acceptance gate before the study workflow unlocks
 - Optional detailed explanations for all three wrong answer choices
 - Interactive answer review with follow-up questions until the selected quiz count is complete
 - LinkedIn post generator based on the last studied topic, with composer fallback before a session starts
@@ -75,7 +76,7 @@ npx @vscode/vsce package --no-yarn
 Install the packaged extension:
 
 ```bash
-code --install-extension cissp-buddy-0.0.20.vsix --force
+code --install-extension cissp-buddy-0.0.21.vsix --force
 ```
 
 If VS Code still shows the previous version after install, run `Developer: Reload Window`.
@@ -112,7 +113,7 @@ The documentation is intentionally split so each audience can find what they nee
 
 ## Legal Notice
 
-Use of CISSP Buddy is completely at the user's own discretion. Johnny Avakian, CISSP Buddy, and related contributors assume no liability for misinformation, omissions, inaccuracies, outcomes, or decisions that arise from use of this software. For best results, use it as a review companion and confirm knowledge through multiple CISSP study sources, official references, and your own judgment. The app now presents this notice on first use and requires explicit acceptance before the study workflow is enabled.
+Use of CISSP Buddy is completely at the user's own discretion. Johnny Avakian, CISSP Buddy, and related contributors assume no liability for misinformation, omissions, inaccuracies, outcomes, or decisions that arise from use of this software. For best results, use it as a review companion and confirm knowledge through multiple CISSP study sources, official references, and your own judgment. The app now keeps this notice visible in the interface and requires explicit acceptance before the study workflow is enabled. Updated legal wording can trigger re-acceptance on later versions.
 
 ## Website And Community Links
 

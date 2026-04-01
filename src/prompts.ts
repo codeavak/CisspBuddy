@@ -165,6 +165,7 @@ export function buildLinkedInGraphicPrompt(topic: string, draftText: string): st
     '  "headline": "strong headline, max 58 characters",',
     '  "subheadline": "one concise supporting line, max 120 characters",',
     '  "keywords": ["keyword one", "keyword two", "keyword three"],',
+    '  "imagePlot": "an AI image-generation prompt for the same LinkedIn topic, 40 to 90 words, no app logo, no watermark",',
     '  "motif": "one of: shield, network, continuity, identity, governance, data, incident",',
     '  "palette": {',
     '    "backgroundStart": "#112233",',
@@ -176,6 +177,8 @@ export function buildLinkedInGraphicPrompt(topic: string, draftText: string): st
     '',
     'Keep the keywords to one to three words each.',
     'Make the headline and subheadline topic-specific.',
+    'Make imagePlot reusable in an external image generator and keep it visually specific.',
+    'Do not mention Johnny Avakian, CISSP Buddy, or any app logo inside imagePlot.',
     'Choose colors that feel premium and readable on a dark background.'
   ].join('\n');
 }

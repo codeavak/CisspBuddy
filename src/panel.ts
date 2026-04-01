@@ -1,4 +1,3 @@
-import * as fs from 'node:fs';
 import * as vscode from 'vscode';
 
 import {
@@ -56,8 +55,10 @@ const USER_GUIDE_DOC_URL = `${REPO_URL}/blob/master/docs/USER_GUIDE.md`;
 const FAQ_DOC_URL = `${REPO_URL}/blob/master/docs/FAQ.md`;
 const TROUBLESHOOTING_DOC_URL = `${REPO_URL}/blob/master/docs/TROUBLESHOOTING.md`;
 const DEMO_SCRIPT_DOC_URL = `${REPO_URL}/blob/master/docs/DEMO_SCRIPT.md`;
+const TERMS_VERSION = '2026-03-31-v2';
 const TERMS_ACCEPTED_KEY = 'cisspBuddy.termsAccepted';
 const TERMS_ACCEPTED_AT_KEY = 'cisspBuddy.termsAcceptedAt';
+const TERMS_ACCEPTED_VERSION_KEY = 'cisspBuddy.termsAcceptedVersion';
 const LEGAL_DISCLAIMER_LINES = [
   'Use of CISSP Buddy is completely at your own discretion.',
   'Johnny Avakian, CISSP Buddy, and all related contributors assume no liability for any misinformation, omissions, inaccuracies, outcomes, or decisions that arise from use of this software.',
@@ -130,7 +131,10 @@ export class CisspBuddyPanel implements vscode.Disposable {
     this.panel = panel;
     this.extensionUri = extensionUri;
     this.globalState = globalState;
-    this.termsAccepted = Boolean(this.globalState.get<boolean>(TERMS_ACCEPTED_KEY, false));
+    const acceptedTermsVersion = this.globalState.get<string | undefined>(TERMS_ACCEPTED_VERSION_KEY);
+    this.termsAccepted =
+      Boolean(this.globalState.get<boolean>(TERMS_ACCEPTED_KEY, false)) &&
+      acceptedTermsVersion === TERMS_VERSION;
     this.termsAcceptedAt = this.globalState.get<string | undefined>(TERMS_ACCEPTED_AT_KEY);
     this.panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-icon.png');
     this.panel.webview.html = this.getHtml(this.panel.webview);
@@ -491,6 +495,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       text: draftText,
       generatedAt: new Date().toLocaleString(),
       imageAlt: `Topic-specific LinkedIn graphic for ${resolvedTopic}`,
+      imagePlot: visualSpec.imagePlot,
       visualSpec
     };
     this.transcript.push(this.createLinkedInDraftEntry(this.linkedinDraft));
@@ -525,6 +530,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     await this.globalState.update(TERMS_ACCEPTED_KEY, true);
     await this.globalState.update(TERMS_ACCEPTED_AT_KEY, acceptedAtIso);
+    await this.globalState.update(TERMS_ACCEPTED_VERSION_KEY, TERMS_VERSION);
     this.postState();
 
     const pendingPrompt = this.pendingPrompt;
@@ -592,6 +598,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       timestamp: draft.generatedAt,
       topic: draft.topic,
       imageAlt: draft.imageAlt,
+      imagePlot: draft.imagePlot,
       visualSpec: draft.visualSpec
     };
   }
@@ -810,9 +817,6 @@ export class CisspBuddyPanel implements vscode.Disposable {
     const bannerUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-logo.png')
     );
-    const appLogoDataUrl = readPngDataUrl(
-      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-icon.png')
-    );
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -863,6 +867,52 @@ export class CisspBuddyPanel implements vscode.Disposable {
         width: min(1080px, calc(100vw - 32px));
         margin: 0 auto;
         padding: 28px 0 320px;
+      }
+
+      .legal-ribbon {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        border-radius: 20px;
+        border: 1px solid rgba(216, 177, 92, 0.28);
+        background:
+          linear-gradient(135deg, rgba(216, 177, 92, 0.14), transparent 45%),
+          linear-gradient(180deg, rgba(20, 27, 41, 0.96), rgba(11, 18, 29, 0.98));
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+      }
+
+      .legal-ribbon__body {
+        display: grid;
+        gap: 4px;
+      }
+
+      .legal-ribbon__eyebrow {
+        margin: 0;
+        color: var(--gold);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 11px;
+      }
+
+      .legal-ribbon__text {
+        margin: 0;
+        color: var(--ink);
+        line-height: 1.55;
+        font-size: 14px;
+      }
+
+      .legal-ribbon__pill {
+        flex-shrink: 0;
+        padding: 10px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(216, 177, 92, 0.22);
+        background: rgba(216, 177, 92, 0.08);
+        color: var(--gold);
+        white-space: nowrap;
+        font-size: 12px;
       }
 
       .hero,
@@ -1310,6 +1360,21 @@ export class CisspBuddyPanel implements vscode.Disposable {
         gap: 10px;
       }
 
+      .message__plot {
+        padding: 16px 18px;
+        border-radius: 18px;
+        border: 1px solid rgba(216, 177, 92, 0.18);
+        background: rgba(7, 17, 28, 0.58);
+      }
+
+      .message__plot-title {
+        margin: 0 0 8px;
+        color: var(--gold);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
       .composer-dock {
         position: fixed;
         left: 50%;
@@ -1499,6 +1564,16 @@ export class CisspBuddyPanel implements vscode.Disposable {
   </head>
   <body>
     <div class="shell">
+      <section class="legal-ribbon" aria-label="Legal notice summary">
+        <div class="legal-ribbon__body">
+          <p class="legal-ribbon__eyebrow">Legal Notice</p>
+          <p id="legalRibbonText" class="legal-ribbon__text">
+            Use CISSP Buddy at your own discretion. No liability is assumed, and important topics should be confirmed with multiple CISSP study sources.
+          </p>
+        </div>
+        <div id="legalRibbonPill" class="legal-ribbon__pill">Acceptance Required</div>
+      </section>
+
       <section class="hero">
         <div class="hero__brand">
           <img class="hero__logo" src="${bannerUri}" alt="CISSP Buddy app logo" />
@@ -1566,12 +1641,12 @@ export class CisspBuddyPanel implements vscode.Disposable {
         <div class="two-up">
           <section class="creator">
             <p class="section__eyebrow">LinkedIn Draft</p>
-            <h2 class="section__title">Generate a post and topic image directly in the answer area.</h2>
+            <h2 class="section__title">Generate a post, topic image, and image plot directly in the answer area.</h2>
             <p class="section__body">
               This uses the last CISSP topic you studied, or the composer topic if you have not
-              started a study session yet, then places the generated post and a topic-specific
-              LinkedIn image into the
-              transcript so you can review and download them together.
+              started a study session yet, then places the generated post, a topic-specific
+              LinkedIn image, and a reusable image-generation plot into the transcript so you can
+              review them together.
             </p>
             <div class="creator__actions">
               <button id="generateLinkedInButton" class="button--primary" type="button">
@@ -1579,7 +1654,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
               </button>
             </div>
             <div id="linkedinMeta" class="creator__meta">
-              Ready to add a downloadable LinkedIn post and image to the answer area.
+              Ready to add a downloadable LinkedIn post, image, and image-generation plot to the answer area.
             </div>
           </section>
 
@@ -1748,7 +1823,6 @@ F5</div>
 
     <script nonce="${nonce}">
       const BRAND_NAME_TEXT = ${JSON.stringify(BRAND_NAME)};
-      const APP_LOGO_DATA_URL = ${JSON.stringify(appLogoDataUrl)};
       const MIN_QUIZ_QUESTIONS = ${MIN_QUIZ_QUESTIONS};
       const MAX_QUIZ_QUESTIONS = ${MAX_QUIZ_QUESTIONS};
 
@@ -1783,6 +1857,8 @@ F5</div>
       const acceptTermsButton = document.getElementById('acceptTermsButton');
       const quickPromptsElement = document.getElementById('quickPrompts');
       const legalMetaElement = document.getElementById('legalMeta');
+      const legalRibbonPillElement = document.getElementById('legalRibbonPill');
+      const legalRibbonTextElement = document.getElementById('legalRibbonText');
       const legalStatusElement = document.getElementById('legalStatus');
       const legalSummaryElement = document.getElementById('legalSummary');
       const transcriptElement = document.getElementById('transcript');
@@ -2022,12 +2098,11 @@ F5</div>
           ) +
           buildKeywordMarkup(keywords, palette) +
           '<g transform="translate(72 588)">' +
-          '<rect width="360" height="58" rx="20" fill="#081521" fill-opacity="0.42" />' +
-          '<image href="' + APP_LOGO_DATA_URL + '" x="18" y="11" width="36" height="36" preserveAspectRatio="xMidYMid meet" />' +
-          '<text x="68" y="28" fill="#ffffff" font-size="20" font-weight="700" font-family="Segoe UI, sans-serif">Johnny Avakian&apos;s CISSP Buddy</text>' +
-          '<text x="68" y="46" fill="rgba(255,255,255,0.68)" font-size="14" font-family="Segoe UI, sans-serif">Study smarter. Explain better. Succeed with confidence.</text>' +
+          '<rect width="320" height="56" rx="20" fill="#081521" fill-opacity="0.42" />' +
+          '<text x="20" y="28" fill="#ffffff" font-size="20" font-weight="700" font-family="Segoe UI, sans-serif">LinkedIn Study Visual</text>' +
+          '<text x="20" y="46" fill="rgba(255,255,255,0.68)" font-size="14" font-family="Segoe UI, sans-serif">Topic-focused cybersecurity concept art</text>' +
           '</g>' +
-          '<text x="1118" y="620" fill="rgba(255,255,255,0.52)" font-size="16" text-anchor="end" font-family="Segoe UI, sans-serif">LinkedIn study graphic</text>' +
+          '<text x="1118" y="620" fill="rgba(255,255,255,0.52)" font-size="16" text-anchor="end" font-family="Segoe UI, sans-serif">Professional CISSP concept image</text>' +
           '</svg>'
         );
       }
@@ -2117,6 +2192,13 @@ F5</div>
           .map((line) => '<li>' + escapeHtml(line) + '</li>')
           .join('');
 
+        legalRibbonPillElement.textContent = state.termsAccepted
+          ? 'Terms Accepted'
+          : 'Acceptance Required';
+        legalRibbonTextElement.textContent = state.termsAccepted
+          ? 'Use CISSP Buddy at your own discretion. No liability is assumed, and important concepts should still be confirmed with multiple CISSP study sources.'
+          : 'Use CISSP Buddy at your own discretion. No liability is assumed, and you must accept the notice before the study workflow unlocks.';
+
         legalStatusElement.textContent = state.termsAccepted
           ? 'Terms Accepted'
           : 'Acceptance Required';
@@ -2197,6 +2279,12 @@ F5</div>
                 '</p>' +
                 '<h3 class="message__linkedin-title">LinkedIn Post And Graphic Ready To Review</h3>' +
                 '</div>' +
+                '<div class="message__plot">' +
+                '<p class="message__plot-title">Image Generation Plot</p>' +
+                '<pre class="message__content">' +
+                escapeHtml(entry.imagePlot || 'No image plot available for this topic yet.') +
+                '</pre>' +
+                '</div>' +
                 '<pre class="message__content">' +
                 escapeHtml(entry.text) +
                 '</pre>' +
@@ -2250,7 +2338,7 @@ F5</div>
             state.linkedinDraft.topic +
             '" on ' +
             state.linkedinDraft.generatedAt +
-            '. View the post and topic-specific image in the answer area and use the download buttons there.';
+            '. View the post, topic-specific image, and image-generation plot in the answer area and use the download buttons there.';
           return;
         }
 
@@ -2332,7 +2420,7 @@ F5</div>
           ? 'Quiz in progress. Type your answer with A, B, C, or D before generating a LinkedIn post.'
           : !state.termsAccepted
             ? 'Accept the CISSP Buddy terms before generating LinkedIn content.'
-          : 'Generate a LinkedIn draft and a topic-specific visual from the last studied topic or the current composer topic.';
+          : 'Generate a LinkedIn draft, topic-specific visual, and image-generation plot from the last studied topic or the current composer topic.';
 
         generateLinkedInToolbarButton.title = linkedInHint;
         generateLinkedInButton.title = linkedInHint;
@@ -2559,11 +2647,6 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-');
-}
-
-function readPngDataUrl(uri: vscode.Uri): string {
-  const fileBytes = fs.readFileSync(uri.fsPath);
-  return `data:image/png;base64,${fileBytes.toString('base64')}`;
 }
 
 function decodePngDataUrl(dataUrl: string): Uint8Array | undefined {

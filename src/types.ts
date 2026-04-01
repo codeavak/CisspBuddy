@@ -5,6 +5,7 @@ export interface TranscriptEntry {
   kind?: 'message' | 'linkedinDraft';
   topic?: string;
   imageAlt?: string;
+  imagePlot?: string;
   visualSpec?: LinkedInVisualSpec;
 }
 
@@ -23,6 +24,7 @@ export interface LinkedInDraft {
   text: string;
   generatedAt: string;
   imageAlt: string;
+  imagePlot: string;
   visualSpec: LinkedInVisualSpec;
 }
 
@@ -47,6 +49,7 @@ export interface LinkedInVisualSpec {
   headline: string;
   subheadline: string;
   keywords: string[];
+  imagePlot: string;
   motif: LinkedInVisualMotif;
   palette: LinkedInVisualPalette;
 }

@@ -2,7 +2,7 @@
   "name": "cissp-buddy",
   "displayName": "Johnny Avakian Presents CISSP Buddy",
   "description": "Johnny Avakian presents a portfolio-grade VS Code CISSP study app with a floating study composer, guided quizzes, detailed wrong-answer review, LinkedIn draft generation, PDF export, defensive guardrails, and complete documentation.",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "publisher": "codeavak",
   "icon": "media/cissp-buddy-icon.png",
   "license": "MIT",

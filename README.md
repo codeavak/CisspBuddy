@@ -105,7 +105,7 @@ The documentation is intentionally split so each audience can find what they nee
 
 ## Community And Portfolio Links
 
-- Portfolio: [codeavak/portfolio_website](https://github.com/codeavak/portfolio_website)
+- Portfolio: [codeavak.github.io/portfolio_website](https://codeavak.github.io/portfolio_website/)
 - LinkedIn: [codeavak](https://www.linkedin.com/in/codeavak)
 - Repo: [codeavak/cisspbuddy](https://github.com/codeavak/cisspbuddy)
 

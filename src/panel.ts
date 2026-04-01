@@ -36,7 +36,7 @@ type WebviewMessage =
   | { type: 'openExternal'; url: string };
 
 const BRAND_NAME = 'Johnny Avakian Presents CISSP Buddy';
-const PORTFOLIO_URL = 'https://github.com/codeavak/portfolio_website';
+const PORTFOLIO_URL = 'https://codeavak.github.io/portfolio_website/';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/codeavak';
 const REPO_URL = 'https://github.com/codeavak/cisspbuddy';
 const ARCHITECTURE_DOC_URL = `${REPO_URL}/blob/master/docs/ARCHITECTURE.md`;

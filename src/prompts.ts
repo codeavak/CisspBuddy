@@ -140,7 +140,7 @@ export function buildLinkedInPostPrompt(topic: string): string {
     'Mention that Johnny is working on posting a CISSP prep blog on the portfolio site.',
     'Mention that stars on the CISSP Buddy repo and comments on the blog are appreciated.',
     'Mention that referrals for cybersecurity or senior engineer roles are welcome.',
-    `Include these links naturally: ${'https://github.com/codeavak/portfolio_website'} and ${'https://github.com/codeavak/cisspbuddy'}.`,
+    `Include these links naturally: ${'https://codeavak.github.io/portfolio_website/'} and ${'https://github.com/codeavak/cisspbuddy'}.`,
     'Return only the LinkedIn post text with clean spacing, ready to paste.'
   ].join('\n');
 }

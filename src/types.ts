@@ -2,6 +2,8 @@ export interface TranscriptEntry {
   role: 'user' | 'assistant';
   text: string;
   timestamp: string;
+  kind?: 'message' | 'linkedinDraft';
+  topic?: string;
 }
 
 export interface QuizSession {

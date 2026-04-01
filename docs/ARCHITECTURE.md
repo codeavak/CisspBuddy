@@ -22,7 +22,7 @@ The extension uses a standard VS Code extension-host architecture:
    - owns the webview panel lifecycle
    - maintains transcript state
    - manages the active quiz session
-   - coordinates quiz turns, PDF export, LinkedIn draft generation, and clipboard actions
+  - coordinates quiz turns, PDF export, LinkedIn draft generation, and transcript download actions
    - streams model output into the UI
 
 3. `src/prompts.ts`
@@ -89,10 +89,10 @@ This is handled as application state, not as a loose UI hint, so each grading tu
 
 The LinkedIn generator is intentionally separate from the quiz transcript flow:
 
-- it uses the current composer topic or the last studied topic
+- it prefers the last studied topic and falls back to the composer only before a study session starts
 - it calls the model with a focused content-authoring prompt
 - it stores the output as a separate `LinkedInDraft`
-- it supports copy-to-clipboard without polluting the quiz transcript
+- it renders the result into the transcript with `hero.png` and dedicated download actions
 
 This separation helps the app support reflection and sharing without disrupting the core study experience.
 
@@ -149,5 +149,6 @@ That decision matters because this project is meant to be a dependable CISSP stu
 - `src/prompts.ts`
 - `src/guardrails.ts`
 - `src/pdf.ts`
+- `media/hero.png`
 - `media/cissp-buddy-icon.png`
 - `media/cissp-buddy-logo.png`

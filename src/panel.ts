@@ -35,7 +35,8 @@ type WebviewMessage =
   | { type: 'setQuestionCount'; questionCount: number }
   | { type: 'setDetailedWrongAnswers'; enabled: boolean }
   | { type: 'generateLinkedInPost'; topic?: string }
-  | { type: 'copyText'; text: string }
+  | { type: 'downloadHeroImage' }
+  | { type: 'downloadLinkedInPost'; topic: string; text: string; timestamp: string }
   | { type: 'exportPdf' }
   | { type: 'resetTranscript' }
   | { type: 'openExternal'; url: string };
@@ -201,9 +202,11 @@ export class CisspBuddyPanel implements vscode.Disposable {
       case 'generateLinkedInPost':
         await this.generateLinkedInPost(message.topic);
         return;
-      case 'copyText':
-        await vscode.env.clipboard.writeText(message.text);
-        await vscode.window.showInformationMessage('Copied the LinkedIn draft to your clipboard.');
+      case 'downloadHeroImage':
+        await this.downloadHeroImage();
+        return;
+      case 'downloadLinkedInPost':
+        await this.downloadLinkedInPost(message.topic, message.text, message.timestamp);
         return;
       case 'exportPdf':
         await this.exportTranscript();
@@ -421,6 +424,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       text: draftText,
       generatedAt: new Date().toLocaleString()
     };
+    this.transcript.push(this.createLinkedInDraftEntry(this.linkedinDraft));
 
     this.postState();
   }
@@ -441,16 +445,20 @@ export class CisspBuddyPanel implements vscode.Disposable {
   }
 
   private resolveLinkedInTopic(topicCandidate?: string): string | undefined {
+    if (this.activeQuiz?.topic) {
+      return this.activeQuiz.topic;
+    }
+
+    if (this.lastStudyTopic) {
+      return this.lastStudyTopic;
+    }
+
     const explicitTopic = topicCandidate?.trim();
     if (explicitTopic) {
       return explicitTopic;
     }
 
-    if (this.activeQuiz?.topic) {
-      return this.activeQuiz.topic;
-    }
-
-    return this.lastStudyTopic;
+    return undefined;
   }
 
   private buildSessionHistory(
@@ -469,15 +477,78 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
   private createEntry(role: TranscriptEntry['role'], text: string): TranscriptEntry {
     return {
+      kind: 'message',
       role,
       text,
       timestamp: new Date().toLocaleString()
     };
   }
 
+  private createLinkedInDraftEntry(draft: LinkedInDraft): TranscriptEntry {
+    return {
+      kind: 'linkedinDraft',
+      role: 'assistant',
+      text: draft.text,
+      timestamp: draft.generatedAt,
+      topic: draft.topic
+    };
+  }
+
   private appendAssistantMessage(text: string): void {
     this.transcript.push(this.createEntry('assistant', text));
     this.postState();
+  }
+
+  private async downloadHeroImage(): Promise<void> {
+    const sourceUri = vscode.Uri.joinPath(this.extensionUri, 'media', 'hero.png');
+    const baseFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
+    const targetUri = await vscode.window.showSaveDialog({
+      defaultUri: baseFolder ? vscode.Uri.joinPath(baseFolder, 'hero.png') : undefined,
+      filters: {
+        PNG: ['png']
+      }
+    });
+
+    if (!targetUri) {
+      return;
+    }
+
+    const fileBytes = await vscode.workspace.fs.readFile(sourceUri);
+    await vscode.workspace.fs.writeFile(targetUri, fileBytes);
+    await vscode.window.showInformationMessage(`Hero image saved to ${targetUri.fsPath}`);
+  }
+
+  private async downloadLinkedInPost(
+    topic: string,
+    text: string,
+    timestamp: string
+  ): Promise<void> {
+    const safeTopic = slugify(topic) || 'cissp-buddy-linkedin-post';
+    const suggestedName = `${safeTopic}-linkedin-post.md`;
+    const baseFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
+    const targetUri = await vscode.window.showSaveDialog({
+      defaultUri: baseFolder ? vscode.Uri.joinPath(baseFolder, suggestedName) : undefined,
+      filters: {
+        Markdown: ['md'],
+        Text: ['txt']
+      }
+    });
+
+    if (!targetUri) {
+      return;
+    }
+
+    const fileContents = [
+      `# LinkedIn Post`,
+      '',
+      `Topic: ${topic}`,
+      `Generated: ${timestamp}`,
+      '',
+      text.trim()
+    ].join('\n');
+
+    await vscode.workspace.fs.writeFile(targetUri, Buffer.from(fileContents, 'utf8'));
+    await vscode.window.showInformationMessage(`LinkedIn post saved to ${targetUri.fsPath}`);
   }
 
   private getQuizKickoffValidationMessage(
@@ -621,8 +692,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
   private getHtml(webview: vscode.Webview): string {
     const nonce = getNonce();
-    const logoUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-logo.png')
+    const heroUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'hero.png')
     );
 
     return `<!DOCTYPE html>
@@ -978,6 +1049,40 @@ export class CisspBuddyPanel implements vscode.Disposable {
         font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
       }
 
+      .message__linkedin {
+        display: grid;
+        gap: 16px;
+      }
+
+      .message__linkedin-hero {
+        width: min(100%, 620px);
+        height: auto;
+        display: block;
+        border-radius: 22px;
+        border: 1px solid rgba(216, 177, 92, 0.18);
+      }
+
+      .message__linkedin-title {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(24px, 4vw, 32px);
+        line-height: 1.15;
+      }
+
+      .message__linkedin-topic {
+        margin: 0;
+        color: var(--gold);
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .message__actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
       .composer-dock {
         position: fixed;
         left: 50%;
@@ -1169,7 +1274,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
     <div class="shell">
       <section class="hero">
         <div class="hero__brand">
-          <img class="hero__logo" src="${logoUri}" alt="CISSP Buddy logo" />
+          <img class="hero__logo" src="${heroUri}" alt="CISSP Buddy hero image" />
           <div class="hero__copy">
             <p class="hero__eyebrow">Study Better For CISSP</p>
             <h1 class="hero__title">Clear explanations, disciplined practice, and smarter preparation.</h1>
@@ -1216,27 +1321,19 @@ export class CisspBuddyPanel implements vscode.Disposable {
         <div class="two-up">
           <section class="creator">
             <p class="section__eyebrow">LinkedIn Draft</p>
-            <h2 class="section__title">Generate a post you can paste directly into LinkedIn.</h2>
+            <h2 class="section__title">Generate a post that appears directly in the answer area.</h2>
             <p class="section__body">
-              This uses the topic in the composer when present, or the most recent CISSP quiz
-              topic, and turns it into a professional thought-leadership post for Johnny Avakian.
+              This uses the last CISSP topic you studied, or the composer topic if you have not
+              started a study session yet, then places the generated post and hero image into the
+              transcript so you can review and download them together.
             </p>
             <div class="creator__actions">
               <button id="generateLinkedInButton" class="button--primary" type="button">
                 Generate LinkedIn Post
               </button>
-              <button id="copyLinkedInButton" class="button--ghost" type="button">
-                Copy Draft
-              </button>
             </div>
-            <textarea
-              id="linkedinDraft"
-              class="creator__draft"
-              readonly
-              placeholder="Generate a LinkedIn draft from the current topic or the most recent quiz topic."
-            ></textarea>
             <div id="linkedinMeta" class="creator__meta">
-              Ready to turn a completed study topic into a thoughtful LinkedIn post.
+              Ready to add a downloadable LinkedIn post to the answer area.
             </div>
           </section>
 
@@ -1363,9 +1460,6 @@ F5</div>
                   <button id="generateLinkedInToolbarButton" class="button--ghost" type="button">
                     Generate LinkedIn
                   </button>
-                  <button id="copyLinkedInToolbarButton" class="button--ghost" type="button">
-                    Copy Draft
-                  </button>
                 </div>
                 <div class="composer__actions-right">
                   <button id="sendButton" class="button--primary" type="submit">
@@ -1381,6 +1475,7 @@ F5</div>
 
     <script nonce="${nonce}">
       const BRAND_NAME_TEXT = ${JSON.stringify(BRAND_NAME)};
+      const HERO_IMAGE_URL = ${JSON.stringify(heroUri.toString())};
       const MIN_QUIZ_QUESTIONS = ${MIN_QUIZ_QUESTIONS};
       const MAX_QUIZ_QUESTIONS = ${MAX_QUIZ_QUESTIONS};
 
@@ -1420,10 +1515,7 @@ F5</div>
       const exportButton = document.getElementById('exportButton');
       const resetButton = document.getElementById('resetButton');
       const generateLinkedInToolbarButton = document.getElementById('generateLinkedInToolbarButton');
-      const copyLinkedInToolbarButton = document.getElementById('copyLinkedInToolbarButton');
       const generateLinkedInButton = document.getElementById('generateLinkedInButton');
-      const copyLinkedInButton = document.getElementById('copyLinkedInButton');
-      const linkedinDraftElement = document.getElementById('linkedinDraft');
       const linkedinMetaElement = document.getElementById('linkedinMeta');
 
       for (let count = MIN_QUIZ_QUESTIONS; count <= MAX_QUIZ_QUESTIONS; count += 1) {
@@ -1482,7 +1574,44 @@ F5</div>
         }
 
         transcriptElement.innerHTML = state.transcript
-          .map((entry) => {
+          .map((entry, index) => {
+            if (entry.kind === 'linkedinDraft') {
+              return (
+                '<article class="message">' +
+                '<div class="message__bubble">' +
+                '<div class="message__meta">' +
+                '<span class="message__role">LinkedIn Draft</span>' +
+                '<span>' +
+                escapeHtml(entry.timestamp) +
+                '</span>' +
+                '</div>' +
+                '<div class="message__linkedin">' +
+                '<img class="message__linkedin-hero" src="' +
+                HERO_IMAGE_URL +
+                '" alt="CISSP Buddy hero image" />' +
+                '<div>' +
+                '<p class="message__linkedin-topic">' +
+                escapeHtml(entry.topic || 'CISSP Topic') +
+                '</p>' +
+                '<h3 class="message__linkedin-title">LinkedIn Post Ready To Review</h3>' +
+                '</div>' +
+                '<pre class="message__content">' +
+                escapeHtml(entry.text) +
+                '</pre>' +
+                '<div class="message__actions">' +
+                '<button class="button--secondary" type="button" data-download-linkedin="' +
+                index +
+                '">Download Post</button>' +
+                '<button class="button--ghost" type="button" data-download-hero="' +
+                index +
+                '">Download Hero Image</button>' +
+                '</div>' +
+                '</div>' +
+                '</div>' +
+                '</article>'
+              );
+            }
+
             const roleLabel = entry.role === 'user' ? 'You' : 'CISSP Buddy';
             const messageClass = entry.role === 'user' ? 'message message--user' : 'message';
             return (
@@ -1513,10 +1642,13 @@ F5</div>
       }
 
       function renderLinkedInDraft() {
-        linkedinDraftElement.value = state.linkedinDraft ? state.linkedinDraft.text : '';
         if (state.linkedinDraft) {
           linkedinMetaElement.textContent =
-            'Generated for "' + state.linkedinDraft.topic + '" on ' + state.linkedinDraft.generatedAt + '.';
+            'Generated for "' +
+            state.linkedinDraft.topic +
+            '" on ' +
+            state.linkedinDraft.generatedAt +
+            '. View it in the answer area and use the download buttons there.';
           return;
         }
 
@@ -1527,24 +1659,13 @@ F5</div>
         }
 
         linkedinMetaElement.textContent =
-          'Generate a LinkedIn draft from the current topic in the composer or the most recent quiz topic.';
+          'Generate a LinkedIn draft from the last studied topic, or from the current composer topic if no study session has been started yet.';
       }
 
       function requestLinkedInDraft() {
         vscode.postMessage({
           type: 'generateLinkedInPost',
           topic: promptInput.value.trim()
-        });
-      }
-
-      function copyLinkedInDraft() {
-        if (!state.linkedinDraft) {
-          return;
-        }
-
-        vscode.postMessage({
-          type: 'copyText',
-          text: state.linkedinDraft.text
         });
       }
 
@@ -1593,9 +1714,7 @@ F5</div>
         exportButton.disabled = state.transcript.length === 0;
         resetButton.disabled = state.transcript.length === 0 || state.isBusy;
         generateLinkedInToolbarButton.disabled = state.isBusy;
-        copyLinkedInToolbarButton.disabled = !state.linkedinDraft || state.linkedinDraft.text.length === 0;
         generateLinkedInButton.disabled = state.isBusy;
-        copyLinkedInButton.disabled = !state.linkedinDraft || state.linkedinDraft.text.length === 0;
 
         generateLinkedInToolbarButton.textContent = quizAwaitingAnswer
           ? 'Answer Quiz First'
@@ -1687,16 +1806,8 @@ F5</div>
         requestLinkedInDraft();
       });
 
-      copyLinkedInToolbarButton.addEventListener('click', () => {
-        copyLinkedInDraft();
-      });
-
       generateLinkedInButton.addEventListener('click', () => {
         requestLinkedInDraft();
-      });
-
-      copyLinkedInButton.addEventListener('click', () => {
-        copyLinkedInDraft();
       });
 
       quickPromptsElement.addEventListener('click', (event) => {
@@ -1711,6 +1822,28 @@ F5</div>
           questionCount: selectedQuestionCount(),
           detailedWrongAnswers: detailedWrongAnswersEnabled()
         });
+      });
+
+      transcriptElement.addEventListener('click', (event) => {
+        const linkedInButton = event.target.closest('[data-download-linkedin]');
+        if (linkedInButton) {
+          const index = Number(linkedInButton.getAttribute('data-download-linkedin'));
+          const entry = state.transcript[index];
+          if (entry && entry.kind === 'linkedinDraft') {
+            vscode.postMessage({
+              type: 'downloadLinkedInPost',
+              text: entry.text,
+              timestamp: entry.timestamp,
+              topic: entry.topic || 'cissp-topic'
+            });
+          }
+          return;
+        }
+
+        const heroButton = event.target.closest('[data-download-hero]');
+        if (heroButton) {
+          vscode.postMessage({ type: 'downloadHeroImage' });
+        }
       });
 
       document.body.addEventListener('click', (event) => {
@@ -1778,6 +1911,14 @@ function looksLikeQuizKickoffResponse(text: string, questionCount: number): bool
 
 function hasChoiceOption(text: string, optionLabel: 'A' | 'B' | 'C' | 'D'): boolean {
   return new RegExp(`(?:^|\\n)\\s*(?:[-*]\\s*)?${optionLabel}(?:\\.|\\)|:|-)\\s+\\S`, 'm').test(text);
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
 }
 
 function getNonce(): string {

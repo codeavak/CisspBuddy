@@ -43,17 +43,23 @@ These open external links in your browser.
 
 This section lets you generate a professional LinkedIn post based on:
 
-- the topic currently typed into the composer, or
-- the most recent quiz topic
+- the last topic you studied, or
+- the topic currently typed into the composer if you have not started a study session yet
 
 Buttons:
 
 - `Generate LinkedIn Post`
-- `Copy Draft`
 
-The same LinkedIn actions are also available in the floating Study Composer so you do not need to scroll back up to the LinkedIn panel on smaller screens.
+The same LinkedIn action is also available in the floating Study Composer so you do not need to scroll back up to the LinkedIn panel on smaller screens.
 
 If a quiz question is currently waiting for your answer, the LinkedIn button changes to make that obvious and the app tells you to reply with `A`, `B`, `C`, or `D` before generating the post.
+
+When a draft is generated, the answer area shows:
+
+- the branded `hero.png`
+- the LinkedIn post text
+- a download button for the post
+- a download button for the hero image
 
 ### In-App Documentation
 
@@ -89,7 +95,6 @@ Controls:
 - `New Session`
 - `Export PDF`
 - `Generate LinkedIn`
-- `Copy Draft`
 - `Ask CISSP Buddy`
 
 ### Reading On Smaller Screens
@@ -146,8 +151,8 @@ This setting is useful when:
 
 The generator uses:
 
-- the current topic in the composer if one exists, otherwise
-- the most recent studied topic
+- the most recent studied topic first
+- the current composer topic only if no study session has been started yet
 
 The draft is intended to be:
 
@@ -155,7 +160,7 @@ The draft is intended to be:
 - LinkedIn-friendly
 - consistent with the product branding
 
-The generated post is not auto-published. You copy it and paste it into LinkedIn yourself.
+The generated post is not auto-published. Review it in the answer area, download it if you want to save it, then paste it into LinkedIn yourself.
 
 ## PDF Export
 

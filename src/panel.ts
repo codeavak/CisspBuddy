@@ -38,8 +38,6 @@ type WebviewMessage =
   | { type: 'setQuestionCount'; questionCount: number }
   | { type: 'setDetailedWrongAnswers'; enabled: boolean }
   | { type: 'generateLinkedInPost'; topic?: string }
-  | { type: 'downloadLinkedInGraphic'; topic: string; dataUrl: string }
-  | { type: 'downloadLinkedInPost'; topic: string; text: string; timestamp: string }
   | { type: 'exportPdf' }
   | { type: 'resetTranscript' }
   | { type: 'openExternal'; url: string };
@@ -263,12 +261,6 @@ export class CisspBuddyPanel implements vscode.Disposable {
         return;
       case 'generateLinkedInPost':
         await this.generateLinkedInPost(message.topic);
-        return;
-      case 'downloadLinkedInGraphic':
-        await this.downloadLinkedInGraphic(message.topic, message.dataUrl);
-        return;
-      case 'downloadLinkedInPost':
-        await this.downloadLinkedInPost(message.topic, message.text, message.timestamp);
         return;
       case 'exportPdf':
         await this.exportTranscript();
@@ -617,67 +609,6 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private appendAssistantMessage(text: string): void {
     this.transcript.push(this.createEntry('assistant', text));
     this.postState();
-  }
-
-  private async downloadLinkedInGraphic(topic: string, dataUrl: string): Promise<void> {
-    const pngBytes = decodePngDataUrl(dataUrl);
-    if (!pngBytes) {
-      await vscode.window.showErrorMessage(
-        'CISSP Buddy could not prepare the LinkedIn graphic download. Please generate it again.'
-      );
-      return;
-    }
-
-    const safeTopic = slugify(topic) || 'cissp-buddy-linkedin-graphic';
-    const baseFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
-    const targetUri = await vscode.window.showSaveDialog({
-      defaultUri: baseFolder
-        ? vscode.Uri.joinPath(baseFolder, `${safeTopic}-linkedin-graphic.png`)
-        : undefined,
-      filters: {
-        PNG: ['png']
-      }
-    });
-
-    if (!targetUri) {
-      return;
-    }
-
-    await vscode.workspace.fs.writeFile(targetUri, pngBytes);
-    await vscode.window.showInformationMessage(`LinkedIn graphic saved to ${targetUri.fsPath}`);
-  }
-
-  private async downloadLinkedInPost(
-    topic: string,
-    text: string,
-    timestamp: string
-  ): Promise<void> {
-    const safeTopic = slugify(topic) || 'cissp-buddy-linkedin-post';
-    const suggestedName = `${safeTopic}-linkedin-post.md`;
-    const baseFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
-    const targetUri = await vscode.window.showSaveDialog({
-      defaultUri: baseFolder ? vscode.Uri.joinPath(baseFolder, suggestedName) : undefined,
-      filters: {
-        Markdown: ['md'],
-        Text: ['txt']
-      }
-    });
-
-    if (!targetUri) {
-      return;
-    }
-
-    const fileContents = [
-      `# LinkedIn Post`,
-      '',
-      `Topic: ${topic}`,
-      `Generated: ${timestamp}`,
-      '',
-      text.trim()
-    ].join('\n');
-
-    await vscode.workspace.fs.writeFile(targetUri, Buffer.from(fileContents, 'utf8'));
-    await vscode.window.showInformationMessage(`LinkedIn post saved to ${targetUri.fsPath}`);
   }
 
   private getQuizKickoffValidationMessage(
@@ -1363,12 +1294,6 @@ export class CisspBuddyPanel implements vscode.Disposable {
         font-size: 13px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-      }
-
-      .message__actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
       }
 
       .message__plot {
@@ -2299,14 +2224,6 @@ F5</div>
                 '<pre class="message__content">' +
                 escapeHtml(entry.text) +
                 '</pre>' +
-                '<div class="message__actions">' +
-                '<button class="button--secondary" type="button" data-download-linkedin="' +
-                index +
-                '">Download Post</button>' +
-                '<button class="button--ghost" type="button" data-download-linkedin-graphic="' +
-                index +
-                '">Download Image</button>' +
-                '</div>' +
                 '</div>' +
                 '</div>' +
                 '</article>'
@@ -2349,7 +2266,7 @@ F5</div>
             state.linkedinDraft.topic +
             '" on ' +
             state.linkedinDraft.generatedAt +
-            '. View the post, topic-specific image, and image-generation plot in the answer area and use the download buttons there.';
+            '. View the post, topic-specific image, and image-generation plot in the answer area.';
           return;
         }
 
@@ -2548,43 +2465,6 @@ F5</div>
         });
       });
 
-      transcriptElement.addEventListener('click', (event) => {
-        const linkedInButton = event.target.closest('[data-download-linkedin]');
-        if (linkedInButton) {
-          const index = Number(linkedInButton.getAttribute('data-download-linkedin'));
-          const entry = state.transcript[index];
-          if (entry && entry.kind === 'linkedinDraft') {
-            vscode.postMessage({
-              type: 'downloadLinkedInPost',
-              text: entry.text,
-              timestamp: entry.timestamp,
-              topic: entry.topic || 'cissp-topic'
-            });
-          }
-          return;
-        }
-
-        const graphicButton = event.target.closest('[data-download-linkedin-graphic]');
-        if (graphicButton) {
-          const index = Number(graphicButton.getAttribute('data-download-linkedin-graphic'));
-          const entry = state.transcript[index];
-          if (entry && entry.kind === 'linkedinDraft' && entry.visualSpec) {
-            createLinkedInGraphicPngDataUrl(entry.visualSpec)
-              .then((dataUrl) => {
-                vscode.postMessage({
-                  type: 'downloadLinkedInGraphic',
-                  topic: entry.topic || 'cissp-topic',
-                  dataUrl
-                });
-              })
-              .catch(() => {
-                linkedinMetaElement.textContent =
-                  'CISSP Buddy could not render that LinkedIn image for download. Generate it again and retry.';
-              });
-          }
-        }
-      });
-
       document.body.addEventListener('click', (event) => {
         const button = event.target.closest('[data-external-url]');
         if (!button) {
@@ -2690,23 +2570,6 @@ function enforceFinalScoreLine(
 
   normalized = normalized.replace(/\s+$/, '');
   return `${normalized}\n${scoreLine}`.trim();
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-}
-
-function decodePngDataUrl(dataUrl: string): Uint8Array | undefined {
-  const match = dataUrl.match(/^data:image\/png;base64,(.+)$/);
-  if (!match) {
-    return undefined;
-  }
-
-  return Uint8Array.from(Buffer.from(match[1], 'base64'));
 }
 
 function formatAcceptedAt(value: string | undefined): string {

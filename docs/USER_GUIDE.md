@@ -73,8 +73,6 @@ When a draft is generated, the answer area shows:
 - a topic-specific LinkedIn image generated for the studied concept
 - an image-generation plot you can reuse in another image tool if you want alternate visuals
 - the LinkedIn post text
-- a download button for the post
-- a download button for the LinkedIn image
 
 ### In-App Documentation
 
@@ -181,7 +179,7 @@ The draft is intended to be:
 - consistent with the product branding
 - paired with a topic image and a reusable image-generation plot instead of a static logo treatment
 
-The generated post is not auto-published. Review it in the answer area, download it if you want to save it, then paste it into LinkedIn yourself.
+The generated post is not auto-published. Review it in the answer area, then paste it into LinkedIn yourself.
 
 ## PDF Export
 

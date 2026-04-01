@@ -22,7 +22,6 @@ Johnny Avakian's CISSP Buddy is a mission-driven Visual Studio Code study compan
 - Quiz-aware LinkedIn controls that tell the user to answer the current question before drafting a post
 - Transcript-based LinkedIn draft cards that show the generated post alongside an AI-designed topic graphic
 - A reusable LinkedIn image-generation plot for the same topic so users can generate alternate visuals elsewhere
-- Download actions for both the generated LinkedIn post and the generated LinkedIn image
 - Always-visible legal notice plus a versioned acceptance gate before the study workflow unlocks
 - Optional detailed explanations for all three wrong answer choices
 - Interactive answer review with follow-up questions until the selected quiz count is complete
@@ -76,7 +75,7 @@ npx @vscode/vsce package --no-yarn
 Install the packaged extension:
 
 ```bash
-code --install-extension cissp-buddy-0.0.22.vsix --force
+code --install-extension cissp-buddy-0.0.23.vsix --force
 ```
 
 If VS Code still shows the previous version after install, run `Developer: Reload Window`.

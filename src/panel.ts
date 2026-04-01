@@ -612,7 +612,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       .shell {
         width: min(1080px, calc(100vw - 32px));
         margin: 0 auto;
-        padding: 28px 0 32px;
+        padding: 28px 0 320px;
       }
 
       .hero,
@@ -913,14 +913,47 @@ export class CisspBuddyPanel implements vscode.Disposable {
         font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
       }
 
-      .composer {
-        position: sticky;
+      .composer-dock {
+        position: fixed;
+        left: 50%;
         bottom: 16px;
+        transform: translateX(-50%);
+        width: min(1080px, calc(100vw - 32px));
+        pointer-events: none;
+        z-index: 30;
+      }
+
+      .composer {
+        position: relative;
+        pointer-events: auto;
+        width: min(520px, 100%);
+        margin-left: auto;
         padding: 18px;
         border-radius: 24px;
         background:
           linear-gradient(180deg, rgba(11, 24, 39, 0.94), rgba(8, 18, 30, 0.96)),
           var(--surface);
+        max-height: calc(100vh - 32px);
+        overflow: auto;
+        transition: width 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+      }
+
+      .composer--collapsed {
+        width: min(360px, 100%);
+        padding: 16px 18px;
+      }
+
+      .composer--collapsed .composer__body {
+        display: none;
+      }
+
+      .composer--collapsed .composer__topline {
+        margin-bottom: 0;
+        align-items: flex-start;
+      }
+
+      .composer--collapsed .composer__status {
+        max-width: 240px;
       }
 
       .composer__topline {
@@ -931,11 +964,26 @@ export class CisspBuddyPanel implements vscode.Disposable {
         margin-bottom: 12px;
       }
 
+      .composer__headline {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+      }
+
       .composer__label {
         font-size: 12px;
         letter-spacing: 0.16em;
         text-transform: uppercase;
         color: var(--gold);
+      }
+
+      .composer__toggle {
+        flex-shrink: 0;
+      }
+
+      .composer__body {
+        display: grid;
+        gap: 12px;
       }
 
       .composer__controls {
@@ -1016,6 +1064,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
         .shell {
           width: calc(100vw - 20px);
           padding-top: 16px;
+          padding-bottom: 220px;
         }
 
         .hero,
@@ -1031,6 +1080,16 @@ export class CisspBuddyPanel implements vscode.Disposable {
         .hero__brand,
         .promo {
           grid-template-columns: 1fr;
+        }
+
+        .composer-dock {
+          width: calc(100vw - 20px);
+          bottom: 10px;
+        }
+
+        .composer,
+        .composer--collapsed {
+          width: 100%;
         }
 
         .composer__topline,
@@ -1196,46 +1255,55 @@ F5</div>
 
       <main id="transcript" class="transcript"></main>
 
-      <section class="composer">
-        <div class="composer__topline">
-          <div class="composer__label">Study Composer</div>
-          <div id="statusText" class="composer__status">
-            Ask a CISSP topic or answer with A, B, C, or D.
-          </div>
-        </div>
-
-        <div class="composer__controls">
-          <div class="composer__control">
-            <label for="questionCount">Quiz length</label>
-            <select id="questionCount"></select>
-          </div>
-          <label class="composer__checkbox" for="detailedWrongAnswers">
-            <input id="detailedWrongAnswers" type="checkbox" />
-            Explain wrong answers in detail
-          </label>
-          <div id="quizSummary" class="quiz-summary">
-            Choose how many questions to ask on the next topic. Default is 1.
-          </div>
-        </div>
-
-        <form id="promptForm">
-          <textarea
-            id="promptInput"
-            placeholder="Explain zero trust, quiz me on risk management, or answer the last question with A, B, C, or D."
-          ></textarea>
-          <div class="composer__actions">
-            <div class="toolbar">
-              <button id="resetButton" class="button--ghost" type="button">New Session</button>
-              <button id="exportButton" class="button--ghost" type="button">Export PDF</button>
+      <div class="composer-dock">
+        <section id="composer" class="composer">
+          <div class="composer__topline">
+            <div class="composer__headline">
+              <div class="composer__label">Study Composer</div>
+              <div id="statusText" class="composer__status">
+                Ask a CISSP topic or answer with A, B, C, or D.
+              </div>
             </div>
-            <div class="composer__actions-right">
-              <button id="sendButton" class="button--primary" type="submit">
-                Ask CISSP Budyy
-              </button>
-            </div>
+            <button id="composerToggleButton" class="button--ghost composer__toggle" type="button">
+              Collapse
+            </button>
           </div>
-        </form>
-      </section>
+
+          <div class="composer__body">
+            <div class="composer__controls">
+              <div class="composer__control">
+                <label for="questionCount">Quiz length</label>
+                <select id="questionCount"></select>
+              </div>
+              <label class="composer__checkbox" for="detailedWrongAnswers">
+                <input id="detailedWrongAnswers" type="checkbox" />
+                Explain wrong answers in detail
+              </label>
+              <div id="quizSummary" class="quiz-summary">
+                Choose how many questions to ask on the next topic. Default is 1.
+              </div>
+            </div>
+
+            <form id="promptForm">
+              <textarea
+                id="promptInput"
+                placeholder="Explain zero trust, quiz me on risk management, or answer the last question with A, B, C, or D."
+              ></textarea>
+              <div class="composer__actions">
+                <div class="toolbar">
+                  <button id="resetButton" class="button--ghost" type="button">New Session</button>
+                  <button id="exportButton" class="button--ghost" type="button">Export PDF</button>
+                </div>
+                <div class="composer__actions-right">
+                  <button id="sendButton" class="button--primary" type="submit">
+                    Ask CISSP Budyy
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </section>
+      </div>
     </div>
 
     <script nonce="${nonce}">
@@ -1243,9 +1311,19 @@ F5</div>
       const MAX_QUIZ_QUESTIONS = ${MAX_QUIZ_QUESTIONS};
 
       const vscode = acquireVsCodeApi();
+      const persistedViewState = vscode.getState() || {};
+
+      function shouldCollapseComposerByDefault() {
+        return window.innerHeight <= 860 || window.innerWidth <= 760;
+      }
+
       const state = {
         activeQuiz: null,
         busyLabel: '',
+        composerCollapsed:
+          typeof persistedViewState.composerCollapsed === 'boolean'
+            ? persistedViewState.composerCollapsed
+            : shouldCollapseComposerByDefault(),
         isBusy: false,
         linkedinDraft: null,
         quickPrompts: [],
@@ -1254,6 +1332,8 @@ F5</div>
         transcript: []
       };
 
+      const composerElement = document.getElementById('composer');
+      const composerToggleButton = document.getElementById('composerToggleButton');
       const quickPromptsElement = document.getElementById('quickPrompts');
       const transcriptElement = document.getElementById('transcript');
       const statusTextElement = document.getElementById('statusText');
@@ -1292,6 +1372,12 @@ F5</div>
 
       function detailedWrongAnswersEnabled() {
         return Boolean(detailedWrongAnswersInput.checked);
+      }
+
+      function persistViewState() {
+        vscode.setState({
+          composerCollapsed: state.composerCollapsed
+        });
       }
 
       function renderQuickPrompts() {
@@ -1402,12 +1488,23 @@ F5</div>
         copyLinkedInButton.disabled = !state.linkedinDraft || state.linkedinDraft.text.length === 0;
       }
 
+      function renderComposer() {
+        composerElement.classList.toggle('composer--collapsed', Boolean(state.composerCollapsed));
+        composerToggleButton.textContent = state.composerCollapsed ? 'Open Composer' : 'Collapse';
+        composerToggleButton.setAttribute('aria-expanded', String(!state.composerCollapsed));
+        composerToggleButton.setAttribute(
+          'aria-label',
+          state.composerCollapsed ? 'Open study composer' : 'Collapse study composer'
+        );
+      }
+
       function render() {
         renderQuickPrompts();
         renderTranscript();
         renderLinkedInDraft();
         renderQuizSummary();
         renderControls();
+        renderComposer();
       }
 
       promptForm.addEventListener('submit', (event) => {
@@ -1429,6 +1526,15 @@ F5</div>
 
       promptInput.addEventListener('input', () => {
         renderControls();
+      });
+
+      composerToggleButton.addEventListener('click', () => {
+        state.composerCollapsed = !state.composerCollapsed;
+        persistViewState();
+        renderComposer();
+        if (!state.composerCollapsed) {
+          promptInput.focus();
+        }
       });
 
       questionCountSelect.addEventListener('change', () => {
@@ -1514,6 +1620,7 @@ F5</div>
       });
 
       vscode.postMessage({ type: 'ready' });
+      renderComposer();
       render();
     </script>
   </body>

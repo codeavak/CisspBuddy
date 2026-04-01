@@ -31,6 +31,10 @@ The standalone app design creates room for product features that do not fit well
 - in-app documentation
 - branding and portfolio calls to action
 
+## Why Is The Study Composer Floating?
+
+The composer is a floating dock so it stays easy to reach without permanently covering the transcript. It can be collapsed when the user wants maximum reading space, which is especially helpful on lower-resolution or shorter screens.
+
 ## What Topics Is The App Allowed To Answer?
 
 The app is intentionally scoped to:

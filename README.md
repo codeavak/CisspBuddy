@@ -15,6 +15,7 @@ Johnny Avakian Presents CISSP Budyy is a portfolio-grade Visual Studio Code exte
 
 - Standalone app experience inside VS Code instead of a plain chat thread
 - Configurable quiz length from `1` to `10` questions per study topic
+- Floating study composer dock with an open or collapse control for smaller screens
 - Optional detailed explanations for all three wrong answer choices
 - Interactive answer review with follow-up questions until the selected quiz count is complete
 - LinkedIn post generator based on the studied topic

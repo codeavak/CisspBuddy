@@ -69,6 +69,11 @@ This area shows the actual study session:
 
 This is where the active study configuration lives.
 
+The composer now behaves like a floating dock so it can stay available without permanently blocking the transcript. On shorter or narrower windows it may start collapsed. Use the composer toggle button to switch between:
+
+- `Open Composer`
+- `Collapse`
+
 Controls:
 
 - `Quiz length`
@@ -80,6 +85,14 @@ Controls:
 - `New Session`
 - `Export PDF`
 - `Ask CISSP Budyy`
+
+### Reading On Smaller Screens
+
+If you are on a lower-resolution display or a shorter editor window:
+
+- collapse the floating composer while reading long answer explanations
+- reopen it only when you are ready to ask the next topic or submit `A`, `B`, `C`, or `D`
+- the app remembers the collapsed state while the webview stays open
 
 ## Recommended Study Flow
 

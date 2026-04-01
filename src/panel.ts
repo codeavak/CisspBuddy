@@ -10,12 +10,17 @@ type WebviewMessage =
   | { type: 'submitPrompt'; text: string }
   | { type: 'quickPrompt'; text: string }
   | { type: 'exportPdf' }
-  | { type: 'resetTranscript' };
+  | { type: 'resetTranscript' }
+  | { type: 'openExternal'; url: string };
+
+const PORTFOLIO_URL = 'https://github.com/codeavak/portfolio_website';
+const LINKEDIN_URL = 'https://www.linkedin.com/in/codeavak';
+const REPO_URL = 'https://github.com/codeavak/cisspbuddy';
 
 export class CisspBuddyPanel implements vscode.Disposable {
   private static currentPanel: CisspBuddyPanel | undefined;
 
-  public static createOrShow(): CisspBuddyPanel {
+  public static createOrShow(extensionUri: vscode.Uri): CisspBuddyPanel {
     if (CisspBuddyPanel.currentPanel) {
       CisspBuddyPanel.currentPanel.panel.reveal(vscode.ViewColumn.Beside);
       return CisspBuddyPanel.currentPanel;
@@ -23,7 +28,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     const panel = vscode.window.createWebviewPanel(
       'cisspBuddy.app',
-      'CISSP Buddy',
+      'Johnny Avakian Presents CISSP Budyy',
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,
@@ -31,7 +36,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       }
     );
 
-    CisspBuddyPanel.currentPanel = new CisspBuddyPanel(panel);
+    CisspBuddyPanel.currentPanel = new CisspBuddyPanel(panel, extensionUri);
     return CisspBuddyPanel.currentPanel;
   }
 
@@ -41,12 +46,15 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
   private readonly panel: vscode.WebviewPanel;
   private readonly disposables: vscode.Disposable[] = [];
+  private readonly extensionUri: vscode.Uri;
   private transcript: TranscriptEntry[] = [];
   private isBusy = false;
   private requestCancellation: vscode.CancellationTokenSource | undefined;
 
-  private constructor(panel: vscode.WebviewPanel) {
+  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this.panel = panel;
+    this.extensionUri = extensionUri;
+    this.panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-budyy-icon.png');
     this.panel.webview.html = this.getHtml(this.panel.webview);
 
     this.disposables.push(
@@ -68,7 +76,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     if (this.isBusy) {
       await vscode.window.showWarningMessage(
-        'CISSP Buddy is finishing the current response. Please try again in a moment.'
+        'Johnny Avakian Presents CISSP Budyy is finishing the current response. Please try again in a moment.'
       );
       return;
     }
@@ -89,7 +97,9 @@ export class CisspBuddyPanel implements vscode.Disposable {
     if (!guardrailOutcome.allowed) {
       this.transcript.push({
         role: 'assistant',
-        text: guardrailOutcome.response ?? 'That request is out of scope for CISSP Buddy.',
+        text:
+          guardrailOutcome.response ??
+          'That request is out of scope for Johnny Avakian Presents CISSP Budyy.',
         timestamp: new Date().toLocaleString()
       });
       this.postState();
@@ -124,7 +134,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
       if (assistantEntry.text.trim().length === 0) {
         assistantEntry.text =
-          'CISSP Buddy did not receive a response from the model. Please try that topic again.';
+          'Johnny Avakian Presents CISSP Budyy did not receive a response from the model. Please try that topic again.';
       }
     } catch (error) {
       assistantEntry.text = this.toErrorMessage(error);
@@ -139,12 +149,12 @@ export class CisspBuddyPanel implements vscode.Disposable {
   public async exportTranscript(): Promise<void> {
     if (this.transcript.length === 0) {
       await vscode.window.showInformationMessage(
-        'Start a CISSP Buddy session before exporting a PDF.'
+        'Start a Johnny Avakian Presents CISSP Budyy session before exporting a PDF.'
       );
       return;
     }
 
-    const suggestedName = `cissp-buddy-${new Date()
+    const suggestedName = `johnny-avakian-presents-cissp-budyy-${new Date()
       .toISOString()
       .replace(/[:.]/g, '-')
       .slice(0, 19)}.pdf`;
@@ -189,6 +199,9 @@ export class CisspBuddyPanel implements vscode.Disposable {
       case 'resetTranscript':
         await this.resetTranscript();
         return;
+      case 'openExternal':
+        await vscode.env.openExternal(vscode.Uri.parse(message.url));
+        return;
       default:
         return;
     }
@@ -197,7 +210,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private async resetTranscript(): Promise<void> {
     if (this.isBusy) {
       await vscode.window.showWarningMessage(
-        'Wait for the current response to finish before starting a new session.'
+        'Wait for the current response to finish before starting a new CISSP Budyy session.'
       );
       return;
     }
@@ -240,7 +253,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private toErrorMessage(error: unknown): string {
     if (error instanceof vscode.LanguageModelError) {
       return [
-        'CISSP Buddy could not reach the selected chat model.',
+        'Johnny Avakian Presents CISSP Budyy could not reach the selected chat model.',
         '',
         `Error: ${error.message}`
       ].join('\n');
@@ -248,13 +261,13 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     if (error instanceof Error) {
       return [
-        'CISSP Buddy hit an unexpected error while preparing your study round.',
+        'Johnny Avakian Presents CISSP Budyy hit an unexpected error while preparing your study round.',
         '',
         `Error: ${error.message}`
       ].join('\n');
     }
 
-    return 'CISSP Buddy hit an unexpected error while preparing your study round.';
+    return 'Johnny Avakian Presents CISSP Budyy hit an unexpected error while preparing your study round.';
   }
 
   private postState(): void {
@@ -270,6 +283,9 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
   private getHtml(webview: vscode.Webview): string {
     const nonce = getNonce();
+    const logoUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-budyy-logo.svg')
+    );
 
     return `<!DOCTYPE html>
 <html lang="en">
@@ -277,10 +293,10 @@ export class CisspBuddyPanel implements vscode.Disposable {
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'none'; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';"
+      content="default-src 'none'; img-src ${webview.cspSource} data:; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CISSP Buddy</title>
+    <title>Johnny Avakian Presents CISSP Budyy</title>
     <style nonce="${nonce}">
       :root {
         color-scheme: light dark;
@@ -312,6 +328,10 @@ export class CisspBuddyPanel implements vscode.Disposable {
         font-family: "Segoe UI Variable Text", "Segoe UI", sans-serif;
       }
 
+      a {
+        color: inherit;
+      }
+
       .shell {
         width: min(980px, calc(100vw - 32px));
         margin: 0 auto;
@@ -319,6 +339,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       }
 
       .hero,
+      .promo,
       .composer,
       .message__bubble,
       .empty-state {
@@ -333,6 +354,20 @@ export class CisspBuddyPanel implements vscode.Disposable {
         background:
           linear-gradient(135deg, rgba(216, 177, 92, 0.18), transparent 55%),
           linear-gradient(180deg, rgba(12, 34, 54, 0.92), var(--surface-hero));
+      }
+
+      .hero__brand {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 18px;
+        align-items: center;
+      }
+
+      .hero__logo {
+        width: 86px;
+        height: 86px;
+        border-radius: 22px;
+        box-shadow: 0 16px 30px rgba(0, 0, 0, 0.24);
       }
 
       .hero__eyebrow {
@@ -358,13 +393,14 @@ export class CisspBuddyPanel implements vscode.Disposable {
       }
 
       .hero__guardrail {
-        margin: 0 0 18px;
+        margin: 18px 0 18px;
         font-size: 13px;
         color: var(--gold);
         letter-spacing: 0.04em;
       }
 
       .quick-prompts,
+      .promo__actions,
       .toolbar,
       .composer__actions,
       .composer__actions-right {
@@ -408,10 +444,54 @@ export class CisspBuddyPanel implements vscode.Disposable {
         border-color: rgba(255, 255, 255, 0.08);
       }
 
+      .button--secondary {
+        color: var(--ink);
+        background: rgba(216, 177, 92, 0.08);
+        border-color: rgba(216, 177, 92, 0.28);
+      }
+
       .transcript {
         display: grid;
         gap: 16px;
         margin: 22px 0 26px;
+      }
+
+      .promo {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 18px;
+        align-items: center;
+        margin-top: 18px;
+        padding: 22px 24px;
+        border-radius: 24px;
+        background:
+          linear-gradient(135deg, rgba(216, 177, 92, 0.14), transparent 48%),
+          linear-gradient(180deg, rgba(15, 33, 49, 0.92), rgba(9, 22, 36, 0.94));
+      }
+
+      .promo__eyebrow {
+        margin: 0 0 8px;
+        color: var(--gold);
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 11px;
+      }
+
+      .promo__title {
+        margin: 0 0 10px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(22px, 3vw, 28px);
+        line-height: 1.2;
+      }
+
+      .promo__body {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.65;
+      }
+
+      .promo__actions {
+        justify-content: flex-end;
       }
 
       .empty-state {
@@ -535,10 +615,16 @@ export class CisspBuddyPanel implements vscode.Disposable {
         }
 
         .hero,
+        .promo,
         .composer,
         .message__bubble,
         .empty-state {
           border-radius: 20px;
+        }
+
+        .hero__brand,
+        .promo {
+          grid-template-columns: 1fr;
         }
 
         .composer__topline,
@@ -552,17 +638,54 @@ export class CisspBuddyPanel implements vscode.Disposable {
   <body>
     <div class="shell">
       <section class="hero">
-        <p class="hero__eyebrow">Standalone Study App</p>
-        <h1 class="hero__title">CISSP Buddy</h1>
-        <p class="hero__subtitle">
-          Ask a CISSP question, get a focused explanation, and finish every round with one
-          CISSP-style multiple-choice question. Export the session to PDF whenever you want a
-          printable review sheet.
-        </p>
+        <div class="hero__brand">
+          <img class="hero__logo" src="${logoUri}" alt="CISSP Budyy logo" />
+          <div>
+            <p class="hero__eyebrow">Johnny Avakian Presents</p>
+            <h1 class="hero__title">CISSP Budyy</h1>
+            <p class="hero__subtitle">
+              Ask a CISSP question, get a focused explanation, and finish every round with one
+              CISSP-style multiple-choice question. Export the session to PDF whenever you want a
+              printable review sheet.
+            </p>
+          </div>
+        </div>
         <p class="hero__guardrail">
           Scoped to CISSP study and defensive security guidance only.
         </p>
         <div id="quickPrompts" class="quick-prompts"></div>
+      </section>
+
+      <section class="promo">
+        <div>
+          <p class="promo__eyebrow">Portfolio And Referral Request</p>
+          <h2 class="promo__title">
+            Referrals for cybersecurity and senior engineer roles would mean a lot.
+          </h2>
+          <p class="promo__body">
+            Johnny is working on posting a CISSP prep blog on the portfolio site. Stars on the
+            CISSP Budyy repo and comments on the blog will be deeply appreciated.
+          </p>
+        </div>
+        <div class="promo__actions">
+          <button
+            class="button--secondary"
+            type="button"
+            data-external-url="${PORTFOLIO_URL}"
+          >
+            Portfolio
+          </button>
+          <button
+            class="button--secondary"
+            type="button"
+            data-external-url="${LINKEDIN_URL}"
+          >
+            LinkedIn
+          </button>
+          <button class="button--secondary" type="button" data-external-url="${REPO_URL}">
+            Star The Repo
+          </button>
+        </div>
       </section>
 
       <main id="transcript" class="transcript"></main>
@@ -587,7 +710,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
             </div>
             <div class="composer__actions-right">
               <button id="sendButton" class="button--primary" type="submit">
-                Ask CISSP Buddy
+                Ask CISSP Budyy
               </button>
             </div>
           </div>
@@ -638,15 +761,15 @@ export class CisspBuddyPanel implements vscode.Disposable {
         if (state.transcript.length === 0) {
           transcriptElement.innerHTML =
             '<section class="empty-state">' +
-            '<h2>Your CISSP practice space is ready.</h2>' +
-            '<p>Use one of the starter prompts above, ask your own question, or answer the next quiz with A, B, C, or D. CISSP Buddy will keep the loop focused on one explanation and one question at a time.</p>' +
+            '<h2>Johnny Avakian Presents CISSP Budyy is ready.</h2>' +
+            '<p>Use one of the starter prompts above, ask your own question, or answer the next quiz with A, B, C, or D. CISSP Budyy will keep the loop focused on one explanation and one question at a time.</p>' +
             '</section>';
           return;
         }
 
         transcriptElement.innerHTML = state.transcript
           .map((entry) => {
-            const roleLabel = entry.role === 'user' ? 'You' : 'CISSP Buddy';
+            const roleLabel = entry.role === 'user' ? 'You' : 'CISSP Budyy';
             const messageClass = entry.role === 'user' ? 'message message--user' : 'message';
             return (
               '<article class="' +
@@ -708,7 +831,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
         renderControls();
       });
 
-      exportButton.addEventListener('click', () => {
+        exportButton.addEventListener('click', () => {
         vscode.postMessage({ type: 'exportPdf' });
       });
 
@@ -725,6 +848,18 @@ export class CisspBuddyPanel implements vscode.Disposable {
         vscode.postMessage({
           type: 'quickPrompt',
           text: button.getAttribute('data-quick-prompt') || ''
+        });
+      });
+
+      document.body.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-external-url]');
+        if (!button) {
+          return;
+        }
+
+        vscode.postMessage({
+          type: 'openExternal',
+          url: button.getAttribute('data-external-url') || ''
         });
       });
 

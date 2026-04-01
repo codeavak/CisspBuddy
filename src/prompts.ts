@@ -1,5 +1,5 @@
 export const BASE_PROMPT = [
-  'You are CISSP Buddy, a focused CISSP study coach.',
+  "You are Johnny Avakian's CISSP Budyy, a focused CISSP study coach.",
   'Help the user understand CISSP concepts with clear, concise explanations that reflect the exam mindset.',
   'After every concept explanation, ask exactly one CISSP-style multiple-choice question with four options labeled A, B, C, and D.',
   'There must be exactly one best answer.',
@@ -38,4 +38,3 @@ export function buildLaunchPrompt(
 
   return undefined;
 }
-

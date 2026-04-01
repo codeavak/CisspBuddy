@@ -366,6 +366,13 @@ export class CisspBuddyPanel implements vscode.Disposable {
       return;
     }
 
+    if (this.activeQuiz?.awaitingAnswer) {
+      await vscode.window.showInformationMessage(
+        'A quiz is in progress. Type your answer to the current question with A, B, C, or D before generating a LinkedIn post.'
+      );
+      return;
+    }
+
     const resolvedTopic = this.resolveLinkedInTopic(topicCandidate);
     if (!resolvedTopic) {
       await vscode.window.showInformationMessage(
@@ -1501,9 +1508,20 @@ F5</div>
 
       function renderLinkedInDraft() {
         linkedinDraftElement.value = state.linkedinDraft ? state.linkedinDraft.text : '';
-        linkedinMetaElement.textContent = state.linkedinDraft
-          ? 'Generated for "' + state.linkedinDraft.topic + '" on ' + state.linkedinDraft.generatedAt + '.'
-          : 'Generate a LinkedIn draft from the current topic in the composer or the most recent quiz topic.';
+        if (state.linkedinDraft) {
+          linkedinMetaElement.textContent =
+            'Generated for "' + state.linkedinDraft.topic + '" on ' + state.linkedinDraft.generatedAt + '.';
+          return;
+        }
+
+        if (state.activeQuiz && state.activeQuiz.awaitingAnswer) {
+          linkedinMetaElement.textContent =
+            'Quiz in progress. Type your answer to the current question before generating a LinkedIn draft.';
+          return;
+        }
+
+        linkedinMetaElement.textContent =
+          'Generate a LinkedIn draft from the current topic in the composer or the most recent quiz topic.';
       }
 
       function requestLinkedInDraft() {
@@ -1556,6 +1574,7 @@ F5</div>
 
       function renderControls() {
         const trimmedInput = promptInput.value.trim();
+        const quizAwaitingAnswer = Boolean(state.activeQuiz && state.activeQuiz.awaitingAnswer);
         statusTextElement.textContent = state.isBusy
           ? state.busyLabel || 'Preparing your next study step...'
           : 'Ask a CISSP topic or answer with A, B, C, or D.';
@@ -1571,6 +1590,20 @@ F5</div>
         copyLinkedInToolbarButton.disabled = !state.linkedinDraft || state.linkedinDraft.text.length === 0;
         generateLinkedInButton.disabled = state.isBusy;
         copyLinkedInButton.disabled = !state.linkedinDraft || state.linkedinDraft.text.length === 0;
+
+        generateLinkedInToolbarButton.textContent = quizAwaitingAnswer
+          ? 'Answer Quiz First'
+          : 'Generate LinkedIn';
+        generateLinkedInButton.textContent = quizAwaitingAnswer
+          ? 'Answer Quiz First'
+          : 'Generate LinkedIn Post';
+
+        const linkedInHint = quizAwaitingAnswer
+          ? 'Quiz in progress. Type your answer with A, B, C, or D before generating a LinkedIn post.'
+          : 'Generate a LinkedIn draft from the current topic or the most recent completed quiz topic.';
+
+        generateLinkedInToolbarButton.title = linkedInHint;
+        generateLinkedInButton.title = linkedInHint;
       }
 
       function renderComposer() {

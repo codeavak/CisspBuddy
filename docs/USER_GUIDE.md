@@ -53,6 +53,8 @@ Buttons:
 
 The same LinkedIn actions are also available in the floating Study Composer so you do not need to scroll back up to the showcase panel on smaller screens.
 
+If a quiz question is currently waiting for your answer, the LinkedIn button changes to make that obvious and the app tells you to reply with `A`, `B`, `C`, or `D` before generating the post.
+
 ### In-App Documentation
 
 This section links directly to the longer GitHub documentation.

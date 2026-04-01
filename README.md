@@ -18,6 +18,7 @@ Johnny Avakian's CISSP Buddy is a portfolio-grade Visual Studio Code extension t
 - Floating study composer dock with an open or collapse control for smaller screens
 - Shorthand topic resolution for prompts like `fm-200`, with a second-stage security relevance check
 - LinkedIn draft controls available both in the showcase panel and directly in the floating composer
+- Quiz-aware LinkedIn controls that tell the user to answer the current question before drafting a post
 - Optional detailed explanations for all three wrong answer choices
 - Interactive answer review with follow-up questions until the selected quiz count is complete
 - LinkedIn post generator based on the studied topic

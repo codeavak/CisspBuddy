@@ -66,7 +66,7 @@ cissp-buddy-<version>.vsix
 Example:
 
 ```text
-cissp-buddy-0.0.21.vsix
+cissp-buddy-0.0.22.vsix
 ```
 
 ## Installing Or Updating The Packaged Extension
@@ -80,7 +80,7 @@ code --install-extension cissp-buddy-<version>.vsix --force
 Example:
 
 ```bash
-code --install-extension cissp-buddy-0.0.21.vsix --force
+code --install-extension cissp-buddy-0.0.22.vsix --force
 ```
 
 After installation:

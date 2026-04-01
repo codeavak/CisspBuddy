@@ -136,8 +136,9 @@ If you are on a lower-resolution display or a shorter editor window:
 4. Read the explanation
 5. Answer the quiz question with `A`, `B`, `C`, or `D`
 6. Continue until the selected number of questions is complete
-7. Generate a LinkedIn post if desired
-8. Export the transcript to PDF if you want a saved study record
+7. Review the final score line showing how many questions you answered correctly
+8. Generate a LinkedIn post if desired
+9. Export the transcript to PDF if you want a saved study record
 
 ## How Quiz Length Works
 

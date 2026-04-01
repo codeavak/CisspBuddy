@@ -96,25 +96,31 @@ export function buildQuizContinuationPrompt(
   if (isFinalQuestion) {
     return [
       `The user answered Question ${session.currentQuestion} of ${session.totalQuestions} with ${answer}.`,
+      `Current score before grading this answer: ${session.correctAnswers}/${session.totalQuestions}.`,
       '',
       'Grade the answer first.',
+      'Immediately under Answer Review, include exactly one line in this format: Result: Correct or Result: Incorrect.',
       'Explain the correct answer in CISSP terms.',
       ...distractorInstruction,
       'Do not ask another question.',
-      'End with a short session wrap-up containing exactly three key takeaways and a one-line quiz complete message.',
+      'End with a short session wrap-up containing exactly three key takeaways and a one-line score message.',
+      'Use the final score format: You answered X/Y questions correctly.',
       '',
       'Use this structure:',
       'Answer Review',
+      'Result',
       distractorHeading,
       'Three key takeaways',
-      'Quiz complete'
+      'Score'
     ].join('\n');
   }
 
   return [
     `The user answered Question ${session.currentQuestion} of ${session.totalQuestions} with ${answer}.`,
+    `Current score before grading this answer: ${session.correctAnswers}/${session.totalQuestions}.`,
     '',
     'Grade the answer first.',
+    'Immediately under Answer Review, include exactly one line in this format: Result: Correct or Result: Incorrect.',
     'Explain the correct answer in CISSP terms.',
     ...distractorInstruction,
     `Then ask Question ${nextQuestionNumber} of ${session.totalQuestions}.`,
@@ -123,6 +129,7 @@ export function buildQuizContinuationPrompt(
     '',
     'Use this structure:',
     'Answer Review',
+    'Result',
     distractorHeading,
     `Question ${nextQuestionNumber} of ${session.totalQuestions}`,
     'Options',

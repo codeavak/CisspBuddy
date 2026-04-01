@@ -76,7 +76,7 @@ npx @vscode/vsce package --no-yarn
 Install the packaged extension:
 
 ```bash
-code --install-extension cissp-buddy-0.0.21.vsix --force
+code --install-extension cissp-buddy-0.0.22.vsix --force
 ```
 
 If VS Code still shows the previous version after install, run `Developer: Reload Window`.

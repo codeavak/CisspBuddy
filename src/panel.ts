@@ -301,6 +301,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       topic,
       totalQuestions: this.selectedQuestionCount,
       currentQuestion: 1,
+      correctAnswers: 0,
       sessionStartIndex,
       explainWrongAnswersInDetail: this.selectedDetailedWrongAnswers,
       awaitingAnswer: true,
@@ -405,9 +406,18 @@ export class CisspBuddyPanel implements vscode.Disposable {
       return;
     }
 
+    const wasCorrect = extractQuizResult(assistantEntry.text);
+    const updatedCorrectAnswers = currentQuiz.correctAnswers + (wasCorrect ? 1 : 0);
+
     if (isFinalQuestion) {
+      assistantEntry.text = enforceFinalScoreLine(
+        assistantEntry.text,
+        updatedCorrectAnswers,
+        currentQuiz.totalQuestions
+      );
       this.activeQuiz = {
         ...currentQuiz,
+        correctAnswers: updatedCorrectAnswers,
         awaitingAnswer: false,
         completed: true
       };
@@ -415,6 +425,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       this.activeQuiz = {
         ...currentQuiz,
         currentQuestion: currentQuiz.currentQuestion + 1,
+        correctAnswers: updatedCorrectAnswers,
         awaitingAnswer: true,
         completed: false
       };
@@ -2381,7 +2392,11 @@ F5</div>
             state.activeQuiz.totalQuestions +
             '-question quiz on ' +
             state.activeQuiz.topic +
-            '. Choose a new topic to start another round.';
+            '. Score: ' +
+            state.activeQuiz.correctAnswers +
+            '/' +
+            state.activeQuiz.totalQuestions +
+            ' correct. Choose a new topic to start another round.';
           return;
         }
 
@@ -2639,6 +2654,42 @@ function looksLikeQuizKickoffResponse(text: string, questionCount: number): bool
 
 function hasChoiceOption(text: string, optionLabel: 'A' | 'B' | 'C' | 'D'): boolean {
   return new RegExp(`(?:^|\\n)\\s*(?:[-*]\\s*)?${optionLabel}(?:\\.|\\)|:|-)\\s+\\S`, 'm').test(text);
+}
+
+function extractQuizResult(text: string): boolean | undefined {
+  const explicitMatch = text.match(/(?:^|\n)\s*Result\s*:\s*(Correct|Incorrect)\s*(?:\n|$)/i);
+  if (explicitMatch) {
+    return explicitMatch[1].toLowerCase() === 'correct';
+  }
+
+  if (/\b(?:you were|your answer was|that is)\s+correct\b/i.test(text)) {
+    return true;
+  }
+
+  if (/\b(?:you were|your answer was|that is)\s+incorrect\b/i.test(text)) {
+    return false;
+  }
+
+  return undefined;
+}
+
+function enforceFinalScoreLine(
+  text: string,
+  correctAnswers: number,
+  totalQuestions: number
+): string {
+  const scoreLine = `You answered ${correctAnswers}/${totalQuestions} questions correctly.`;
+  let normalized = text
+    .replace(/(?:^|\n)\s*Quiz complete\s*:?.*(?=\n|$)/gi, '\nScore')
+    .replace(/(?:^|\n)\s*You answered\s+\d+\s*\/\s*\d+\s+questions correctly\.?\s*(?=\n|$)/gi, '')
+    .trim();
+
+  if (!/(?:^|\n)\s*Score\s*(?:\n|$)/i.test(normalized)) {
+    normalized = `${normalized}\n\nScore`;
+  }
+
+  normalized = normalized.replace(/\s+$/, '');
+  return `${normalized}\n${scoreLine}`.trim();
 }
 
 function slugify(value: string): string {

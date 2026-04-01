@@ -13,6 +13,7 @@ export interface QuizSession {
   topic: string;
   totalQuestions: number;
   currentQuestion: number;
+  correctAnswers: number;
   sessionStartIndex: number;
   explainWrongAnswersInDetail: boolean;
   awaitingAnswer: boolean;

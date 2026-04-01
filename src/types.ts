@@ -4,3 +4,17 @@ export interface TranscriptEntry {
   timestamp: string;
 }
 
+export interface QuizSession {
+  topic: string;
+  totalQuestions: number;
+  currentQuestion: number;
+  sessionStartIndex: number;
+  awaitingAnswer: boolean;
+  completed: boolean;
+}
+
+export interface LinkedInDraft {
+  topic: string;
+  text: string;
+  generatedAt: string;
+}

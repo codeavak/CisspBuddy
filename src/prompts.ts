@@ -1,11 +1,15 @@
+import { QuizSession } from './types';
+
+export const MIN_QUIZ_QUESTIONS = 1;
+export const MAX_QUIZ_QUESTIONS = 10;
+
 export const BASE_PROMPT = [
   "You are Johnny Avakian's CISSP Budyy, a focused CISSP study coach.",
   'Help the user understand CISSP concepts with clear, concise explanations that reflect the exam mindset.',
-  'After every concept explanation, ask exactly one CISSP-style multiple-choice question with four options labeled A, B, C, and D.',
-  'There must be exactly one best answer.',
-  'End quiz turns by inviting the user to reply with A, B, C, or D.',
-  'If the user responds with an answer to the previous question, grade it first, explain the correct answer in CISSP terms, explain briefly why the other options are weaker, and then ask one new question.',
-  'Keep the tone encouraging and exam-focused.',
+  'Follow the app turn instructions exactly, especially question numbering, when to reveal answers, and when to stop asking new questions.',
+  'Each multiple-choice question must have exactly four options labeled A, B, C, and D with one best answer.',
+  'When grading, explain the correct answer in CISSP terms and briefly explain why the other options are weaker.',
+  'Keep the tone encouraging, precise, and exam-focused.',
   'Prefer short sections and bullets over long essays.',
   'Do not answer non-CISSP topics beyond a brief redirection back to CISSP study.',
   'Do not provide instructions for malware, credential theft, phishing, unauthorized access, evasion, or any offensive cyber misuse.',
@@ -37,4 +41,83 @@ export function buildLaunchPrompt(
   }
 
   return undefined;
+}
+
+export function buildQuizStartPrompt(topic: string, questionCount: number): string {
+  return [
+    `Study topic: ${topic}`,
+    '',
+    'Respond as a CISSP study coach inside a polished VS Code app.',
+    `Explain the topic clearly first, then ask Question 1 of ${questionCount}.`,
+    `The user has asked for a total of ${questionCount} question${questionCount === 1 ? '' : 's'} on this topic.`,
+    'Do not reveal the answer yet.',
+    'End by instructing the user to reply with A, B, C, or D.',
+    '',
+    'Use this structure:',
+    `Concept`,
+    `Question 1 of ${questionCount}`,
+    'Options',
+    'Reply prompt'
+  ].join('\n');
+}
+
+export function buildQuizContinuationPrompt(
+  answer: string,
+  session: QuizSession
+): string {
+  const isFinalQuestion = session.currentQuestion >= session.totalQuestions;
+  const nextQuestionNumber = session.currentQuestion + 1;
+
+  if (isFinalQuestion) {
+    return [
+      `The user answered Question ${session.currentQuestion} of ${session.totalQuestions} with ${answer}.`,
+      '',
+      'Grade the answer first.',
+      'Explain the correct answer in CISSP terms.',
+      'Briefly explain why the other options are weaker.',
+      'Do not ask another question.',
+      'End with a short session wrap-up containing exactly three key takeaways and a one-line quiz complete message.',
+      '',
+      'Use this structure:',
+      'Answer Review',
+      'Why the other options are weaker',
+      'Three key takeaways',
+      'Quiz complete'
+    ].join('\n');
+  }
+
+  return [
+    `The user answered Question ${session.currentQuestion} of ${session.totalQuestions} with ${answer}.`,
+    '',
+    'Grade the answer first.',
+    'Explain the correct answer in CISSP terms.',
+    'Briefly explain why the other options are weaker.',
+    `Then ask Question ${nextQuestionNumber} of ${session.totalQuestions}.`,
+    'Do not reveal the new answer yet.',
+    'End by instructing the user to reply with A, B, C, or D.',
+    '',
+    'Use this structure:',
+    'Answer Review',
+    'Why the other options are weaker',
+    `Question ${nextQuestionNumber} of ${session.totalQuestions}`,
+    'Options',
+    'Reply prompt'
+  ].join('\n');
+}
+
+export function buildLinkedInPostPrompt(topic: string): string {
+  return [
+    `Create a professional LinkedIn post about this CISSP or defensive security topic: ${topic}`,
+    '',
+    'Write in Johnny Avakian’s voice as an engineer building a polished CISSP study product.',
+    'Keep the post professional, credible, and showcase-worthy.',
+    'Avoid emojis and hypey language.',
+    'Aim for roughly 180 to 260 words.',
+    'Include a strong opening hook, one compact paragraph of insight, and a closing call to action.',
+    'Mention that Johnny is working on posting a CISSP prep blog on the portfolio site.',
+    'Mention that stars on the CISSP Budyy repo and comments on the blog are appreciated.',
+    'Mention that referrals for cybersecurity or senior engineer roles are welcome.',
+    `Include these links naturally: ${'https://github.com/codeavak/portfolio_website'} and ${'https://github.com/codeavak/cisspbuddy'}.`,
+    'Return only the LinkedIn post text with clean spacing, ready to paste.'
+  ].join('\n');
 }

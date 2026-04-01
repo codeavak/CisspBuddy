@@ -1,21 +1,35 @@
 import * as vscode from 'vscode';
 
-import { evaluatePrompt } from './guardrails';
+import { evaluatePrompt, isChoiceAnswer } from './guardrails';
 import { createTranscriptPdf } from './pdf';
-import { BASE_PROMPT, QUICK_PROMPTS } from './prompts';
-import { TranscriptEntry } from './types';
+import {
+  BASE_PROMPT,
+  buildLinkedInPostPrompt,
+  buildQuizContinuationPrompt,
+  buildQuizStartPrompt,
+  MAX_QUIZ_QUESTIONS,
+  MIN_QUIZ_QUESTIONS,
+  QUICK_PROMPTS
+} from './prompts';
+import { LinkedInDraft, QuizSession, TranscriptEntry } from './types';
 
 type WebviewMessage =
   | { type: 'ready' }
-  | { type: 'submitPrompt'; text: string }
-  | { type: 'quickPrompt'; text: string }
+  | { type: 'submitPrompt'; text: string; questionCount: number }
+  | { type: 'quickPrompt'; text: string; questionCount: number }
+  | { type: 'setQuestionCount'; questionCount: number }
+  | { type: 'generateLinkedInPost'; topic?: string }
+  | { type: 'copyText'; text: string }
   | { type: 'exportPdf' }
   | { type: 'resetTranscript' }
   | { type: 'openExternal'; url: string };
 
+const BRAND_NAME = 'Johnny Avakian Presents CISSP Budyy';
 const PORTFOLIO_URL = 'https://github.com/codeavak/portfolio_website';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/codeavak';
 const REPO_URL = 'https://github.com/codeavak/cisspbuddy';
+const ARCHITECTURE_DOC_URL = `${REPO_URL}/blob/master/docs/ARCHITECTURE.md`;
+const LAUNCH_DOC_URL = `${REPO_URL}/blob/master/docs/LAUNCHING.md`;
 
 export class CisspBuddyPanel implements vscode.Disposable {
   private static currentPanel: CisspBuddyPanel | undefined;
@@ -28,7 +42,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     const panel = vscode.window.createWebviewPanel(
       'cisspBuddy.app',
-      'Johnny Avakian Presents CISSP Budyy',
+      BRAND_NAME,
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,
@@ -48,7 +62,12 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private readonly disposables: vscode.Disposable[] = [];
   private readonly extensionUri: vscode.Uri;
   private transcript: TranscriptEntry[] = [];
+  private activeQuiz: QuizSession | undefined;
+  private linkedinDraft: LinkedInDraft | undefined;
+  private selectedQuestionCount = MIN_QUIZ_QUESTIONS;
+  private lastStudyTopic: string | undefined;
   private isBusy = false;
+  private busyLabel = '';
   private requestCancellation: vscode.CancellationTokenSource | undefined;
 
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
@@ -68,7 +87,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
     );
   }
 
-  public async ask(prompt: string): Promise<void> {
+  public async ask(prompt: string, questionCount = this.selectedQuestionCount): Promise<void> {
     const trimmedPrompt = prompt.trim();
     if (trimmedPrompt.length === 0) {
       return;
@@ -76,80 +95,26 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     if (this.isBusy) {
       await vscode.window.showWarningMessage(
-        'Johnny Avakian Presents CISSP Budyy is finishing the current response. Please try again in a moment.'
+        `${BRAND_NAME} is finishing the current response. Please try again in a moment.`
       );
       return;
     }
 
     this.panel.reveal(vscode.ViewColumn.Beside);
+    this.selectedQuestionCount = clampQuestionCount(questionCount);
 
-    const guardrailOutcome = evaluatePrompt(trimmedPrompt, this.transcript);
-
-    const userEntry: TranscriptEntry = {
-      role: 'user',
-      text: trimmedPrompt,
-      timestamp: new Date().toLocaleString()
-    };
-
-    this.transcript.push(userEntry);
-    this.postState();
-
-    if (!guardrailOutcome.allowed) {
-      this.transcript.push({
-        role: 'assistant',
-        text:
-          guardrailOutcome.response ??
-          'That request is out of scope for Johnny Avakian Presents CISSP Budyy.',
-        timestamp: new Date().toLocaleString()
-      });
-      this.postState();
+    if (isChoiceAnswer(trimmedPrompt)) {
+      await this.handleQuizAnswer(trimmedPrompt);
       return;
     }
 
-    const modelMessages = this.buildModelMessages();
-
-    const assistantEntry: TranscriptEntry = {
-      role: 'assistant',
-      text: '',
-      timestamp: new Date().toLocaleString()
-    };
-
-    this.transcript.push(assistantEntry);
-    this.isBusy = true;
-    this.postState();
-
-    try {
-      const model = await this.selectModel();
-      this.requestCancellation = new vscode.CancellationTokenSource();
-      const response = await model.sendRequest(
-        modelMessages,
-        {},
-        this.requestCancellation.token
-      );
-
-      for await (const fragment of response.text) {
-        assistantEntry.text += fragment;
-        this.postState();
-      }
-
-      if (assistantEntry.text.trim().length === 0) {
-        assistantEntry.text =
-          'Johnny Avakian Presents CISSP Budyy did not receive a response from the model. Please try that topic again.';
-      }
-    } catch (error) {
-      assistantEntry.text = this.toErrorMessage(error);
-    } finally {
-      this.isBusy = false;
-      this.requestCancellation?.dispose();
-      this.requestCancellation = undefined;
-      this.postState();
-    }
+    await this.handleTopicPrompt(trimmedPrompt);
   }
 
   public async exportTranscript(): Promise<void> {
     if (this.transcript.length === 0) {
       await vscode.window.showInformationMessage(
-        'Start a Johnny Avakian Presents CISSP Budyy session before exporting a PDF.'
+        `Start a ${BRAND_NAME} session before exporting a PDF.`
       );
       return;
     }
@@ -191,7 +156,18 @@ export class CisspBuddyPanel implements vscode.Disposable {
         return;
       case 'submitPrompt':
       case 'quickPrompt':
-        await this.ask(message.text);
+        await this.ask(message.text, message.questionCount);
+        return;
+      case 'setQuestionCount':
+        this.selectedQuestionCount = clampQuestionCount(message.questionCount);
+        this.postState();
+        return;
+      case 'generateLinkedInPost':
+        await this.generateLinkedInPost(message.topic);
+        return;
+      case 'copyText':
+        await vscode.env.clipboard.writeText(message.text);
+        await vscode.window.showInformationMessage('Copied the LinkedIn draft to your clipboard.');
         return;
       case 'exportPdf':
         await this.exportTranscript();
@@ -207,28 +183,282 @@ export class CisspBuddyPanel implements vscode.Disposable {
     }
   }
 
+  private async handleTopicPrompt(topic: string): Promise<void> {
+    const guardrailOutcome = evaluatePrompt(topic, this.transcript);
+    this.transcript.push(this.createEntry('user', topic));
+    this.postState();
+
+    if (!guardrailOutcome.allowed) {
+      this.appendAssistantMessage(
+        guardrailOutcome.response ?? `That request is out of scope for ${BRAND_NAME}.`
+      );
+      return;
+    }
+
+    const sessionStartIndex = this.transcript.length - 1;
+    const pendingQuiz: QuizSession = {
+      topic,
+      totalQuestions: this.selectedQuestionCount,
+      currentQuestion: 1,
+      sessionStartIndex,
+      awaitingAnswer: true,
+      completed: false
+    };
+
+    const assistantEntry = this.createEntry('assistant', '');
+    this.transcript.push(assistantEntry);
+    this.postState();
+
+    const messages = [
+      vscode.LanguageModelChatMessage.User(BASE_PROMPT),
+      vscode.LanguageModelChatMessage.User(
+        buildQuizStartPrompt(topic, pendingQuiz.totalQuestions)
+      )
+    ];
+
+    const succeeded = await this.streamModelResponse(
+      messages,
+      assistantEntry,
+      `Preparing question 1 of ${pendingQuiz.totalQuestions}...`
+    );
+
+    if (succeeded) {
+      this.activeQuiz = pendingQuiz;
+      this.lastStudyTopic = topic;
+    }
+
+    this.postState();
+  }
+
+  private async handleQuizAnswer(answer: string): Promise<void> {
+    this.transcript.push(this.createEntry('user', answer.toUpperCase()));
+    this.postState();
+
+    if (!this.activeQuiz || !this.activeQuiz.awaitingAnswer) {
+      this.appendAssistantMessage(
+        'There is no active quiz question waiting for an answer. Start a topic first, then answer with A, B, C, or D.'
+      );
+      return;
+    }
+
+    const currentQuiz = { ...this.activeQuiz };
+    const history = this.buildSessionHistory(
+      currentQuiz.sessionStartIndex,
+      this.transcript.length - 1
+    );
+
+    const assistantEntry = this.createEntry('assistant', '');
+    this.transcript.push(assistantEntry);
+    this.postState();
+
+    const messages = [
+      vscode.LanguageModelChatMessage.User(BASE_PROMPT),
+      ...history,
+      vscode.LanguageModelChatMessage.User(buildQuizContinuationPrompt(answer, currentQuiz))
+    ];
+
+    const isFinalQuestion = currentQuiz.currentQuestion >= currentQuiz.totalQuestions;
+    const succeeded = await this.streamModelResponse(
+      messages,
+      assistantEntry,
+      isFinalQuestion
+        ? `Reviewing the final answer for question ${currentQuiz.currentQuestion}...`
+        : `Reviewing answer and preparing question ${currentQuiz.currentQuestion + 1} of ${currentQuiz.totalQuestions}...`
+    );
+
+    if (!succeeded) {
+      this.postState();
+      return;
+    }
+
+    if (isFinalQuestion) {
+      this.activeQuiz = {
+        ...currentQuiz,
+        awaitingAnswer: false,
+        completed: true
+      };
+    } else {
+      this.activeQuiz = {
+        ...currentQuiz,
+        currentQuestion: currentQuiz.currentQuestion + 1,
+        awaitingAnswer: true,
+        completed: false
+      };
+    }
+
+    this.postState();
+  }
+
+  private async generateLinkedInPost(topicCandidate?: string): Promise<void> {
+    if (this.isBusy) {
+      await vscode.window.showWarningMessage(
+        `Wait for ${BRAND_NAME} to finish the current task before generating a LinkedIn post.`
+      );
+      return;
+    }
+
+    const resolvedTopic = this.resolveLinkedInTopic(topicCandidate);
+    if (!resolvedTopic) {
+      await vscode.window.showInformationMessage(
+        'Enter a CISSP topic in the composer, or complete a quiz topic first, before generating a LinkedIn post.'
+      );
+      return;
+    }
+
+    const guardrailOutcome = evaluatePrompt(resolvedTopic, this.transcript);
+    if (!guardrailOutcome.allowed) {
+      await vscode.window.showWarningMessage(
+        guardrailOutcome.response ??
+          'The selected topic is out of scope for the LinkedIn post generator.'
+      );
+      return;
+    }
+
+    const messages = [
+      vscode.LanguageModelChatMessage.User(BASE_PROMPT),
+      vscode.LanguageModelChatMessage.User(buildLinkedInPostPrompt(resolvedTopic))
+    ];
+
+    const draftText = await this.captureModelResponse(
+      messages,
+      'Drafting a showcase-ready LinkedIn post...'
+    );
+
+    if (!draftText) {
+      this.postState();
+      return;
+    }
+
+    this.linkedinDraft = {
+      topic: resolvedTopic,
+      text: draftText,
+      generatedAt: new Date().toLocaleString()
+    };
+
+    this.postState();
+  }
+
   private async resetTranscript(): Promise<void> {
     if (this.isBusy) {
       await vscode.window.showWarningMessage(
-        'Wait for the current response to finish before starting a new CISSP Budyy session.'
+        `Wait for the current response to finish before starting a new ${BRAND_NAME} session.`
       );
       return;
     }
 
     this.transcript = [];
+    this.activeQuiz = undefined;
+    this.linkedinDraft = undefined;
+    this.lastStudyTopic = undefined;
     this.postState();
   }
 
-  private buildModelMessages(): vscode.LanguageModelChatMessage[] {
-    const historyMessages = this.transcript
+  private resolveLinkedInTopic(topicCandidate?: string): string | undefined {
+    const explicitTopic = topicCandidate?.trim();
+    if (explicitTopic) {
+      return explicitTopic;
+    }
+
+    if (this.activeQuiz?.topic) {
+      return this.activeQuiz.topic;
+    }
+
+    return this.lastStudyTopic;
+  }
+
+  private buildSessionHistory(
+    sessionStartIndex: number,
+    endExclusive: number
+  ): vscode.LanguageModelChatMessage[] {
+    return this.transcript
+      .slice(sessionStartIndex, endExclusive)
       .filter((entry) => entry.text.trim().length > 0)
       .map((entry) =>
         entry.role === 'user'
           ? vscode.LanguageModelChatMessage.User(entry.text)
           : vscode.LanguageModelChatMessage.Assistant(entry.text)
       );
+  }
 
-    return [vscode.LanguageModelChatMessage.User(BASE_PROMPT), ...historyMessages];
+  private createEntry(role: TranscriptEntry['role'], text: string): TranscriptEntry {
+    return {
+      role,
+      text,
+      timestamp: new Date().toLocaleString()
+    };
+  }
+
+  private appendAssistantMessage(text: string): void {
+    this.transcript.push(this.createEntry('assistant', text));
+    this.postState();
+  }
+
+  private async streamModelResponse(
+    messages: vscode.LanguageModelChatMessage[],
+    assistantEntry: TranscriptEntry,
+    busyLabel: string
+  ): Promise<boolean> {
+    try {
+      this.isBusy = true;
+      this.busyLabel = busyLabel;
+      this.postState();
+
+      const model = await this.selectModel();
+      this.requestCancellation = new vscode.CancellationTokenSource();
+      const response = await model.sendRequest(messages, {}, this.requestCancellation.token);
+
+      for await (const fragment of response.text) {
+        assistantEntry.text += fragment;
+        this.postState();
+      }
+
+      if (assistantEntry.text.trim().length === 0) {
+        assistantEntry.text =
+          `${BRAND_NAME} did not receive a response from the model. Please try that topic again.`;
+      }
+
+      return true;
+    } catch (error) {
+      assistantEntry.text = this.toErrorMessage(error);
+      return false;
+    } finally {
+      this.isBusy = false;
+      this.busyLabel = '';
+      this.requestCancellation?.dispose();
+      this.requestCancellation = undefined;
+      this.postState();
+    }
+  }
+
+  private async captureModelResponse(
+    messages: vscode.LanguageModelChatMessage[],
+    busyLabel: string
+  ): Promise<string | undefined> {
+    try {
+      this.isBusy = true;
+      this.busyLabel = busyLabel;
+      this.postState();
+
+      const model = await this.selectModel();
+      this.requestCancellation = new vscode.CancellationTokenSource();
+      const response = await model.sendRequest(messages, {}, this.requestCancellation.token);
+
+      let output = '';
+      for await (const fragment of response.text) {
+        output += fragment;
+      }
+
+      return output.trim().length > 0 ? output.trim() : undefined;
+    } catch (error) {
+      await vscode.window.showErrorMessage(this.toErrorMessage(error));
+      return undefined;
+    } finally {
+      this.isBusy = false;
+      this.busyLabel = '';
+      this.requestCancellation?.dispose();
+      this.requestCancellation = undefined;
+      this.postState();
+    }
   }
 
   private async selectModel(): Promise<vscode.LanguageModelChat> {
@@ -253,7 +483,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private toErrorMessage(error: unknown): string {
     if (error instanceof vscode.LanguageModelError) {
       return [
-        'Johnny Avakian Presents CISSP Budyy could not reach the selected chat model.',
+        `${BRAND_NAME} could not reach the selected chat model.`,
         '',
         `Error: ${error.message}`
       ].join('\n');
@@ -261,21 +491,25 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     if (error instanceof Error) {
       return [
-        'Johnny Avakian Presents CISSP Budyy hit an unexpected error while preparing your study round.',
+        `${BRAND_NAME} hit an unexpected error while preparing your study round.`,
         '',
         `Error: ${error.message}`
       ].join('\n');
     }
 
-    return 'Johnny Avakian Presents CISSP Budyy hit an unexpected error while preparing your study round.';
+    return `${BRAND_NAME} hit an unexpected error while preparing your study round.`;
   }
 
   private postState(): void {
     void this.panel.webview.postMessage({
       type: 'state',
       payload: {
+        activeQuiz: this.activeQuiz,
+        busyLabel: this.busyLabel,
         isBusy: this.isBusy,
+        linkedinDraft: this.linkedinDraft,
         quickPrompts: QUICK_PROMPTS,
+        selectedQuestionCount: this.selectedQuestionCount,
         transcript: this.transcript
       }
     });
@@ -333,18 +567,30 @@ export class CisspBuddyPanel implements vscode.Disposable {
       }
 
       .shell {
-        width: min(980px, calc(100vw - 32px));
+        width: min(1080px, calc(100vw - 32px));
         margin: 0 auto;
         padding: 28px 0 32px;
       }
 
       .hero,
       .promo,
+      .creator,
+      .docs,
       .composer,
       .message__bubble,
       .empty-state {
         border: 1px solid var(--border);
         box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+      }
+
+      .hero,
+      .promo,
+      .creator,
+      .docs,
+      .composer,
+      .message__bubble,
+      .empty-state {
+        border-radius: 24px;
       }
 
       .hero {
@@ -370,7 +616,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
         box-shadow: 0 16px 30px rgba(0, 0, 0, 0.24);
       }
 
-      .hero__eyebrow {
+      .hero__eyebrow,
+      .section__eyebrow {
         margin: 0 0 10px;
         color: var(--gold);
         text-transform: uppercase;
@@ -385,11 +632,15 @@ export class CisspBuddyPanel implements vscode.Disposable {
         line-height: 1.05;
       }
 
-      .hero__subtitle {
-        max-width: 760px;
-        margin: 12px 0 18px;
+      .hero__subtitle,
+      .section__body {
+        line-height: 1.65;
         color: var(--muted);
-        line-height: 1.6;
+      }
+
+      .hero__subtitle {
+        max-width: 780px;
+        margin: 12px 0 18px;
       }
 
       .hero__guardrail {
@@ -401,12 +652,26 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
       .quick-prompts,
       .promo__actions,
+      .creator__actions,
+      .docs__actions,
       .toolbar,
       .composer__actions,
       .composer__actions-right {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
+      }
+
+      .stack {
+        display: grid;
+        gap: 18px;
+        margin-top: 18px;
+      }
+
+      .two-up {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 18px;
       }
 
       button {
@@ -450,10 +715,24 @@ export class CisspBuddyPanel implements vscode.Disposable {
         border-color: rgba(216, 177, 92, 0.28);
       }
 
+      select,
+      textarea {
+        font: inherit;
+      }
+
       .transcript {
         display: grid;
         gap: 16px;
         margin: 22px 0 26px;
+      }
+
+      .promo,
+      .creator,
+      .docs {
+        padding: 22px 24px;
+        background:
+          linear-gradient(135deg, rgba(216, 177, 92, 0.12), transparent 48%),
+          linear-gradient(180deg, rgba(15, 33, 49, 0.92), rgba(9, 22, 36, 0.94));
       }
 
       .promo {
@@ -461,37 +740,73 @@ export class CisspBuddyPanel implements vscode.Disposable {
         grid-template-columns: 1.2fr 0.8fr;
         gap: 18px;
         align-items: center;
-        margin-top: 18px;
-        padding: 22px 24px;
-        border-radius: 24px;
-        background:
-          linear-gradient(135deg, rgba(216, 177, 92, 0.14), transparent 48%),
-          linear-gradient(180deg, rgba(15, 33, 49, 0.92), rgba(9, 22, 36, 0.94));
       }
 
-      .promo__eyebrow {
-        margin: 0 0 8px;
-        color: var(--gold);
-        text-transform: uppercase;
-        letter-spacing: 0.16em;
-        font-size: 11px;
-      }
-
-      .promo__title {
+      .section__title {
         margin: 0 0 10px;
         font-family: Georgia, "Times New Roman", serif;
         font-size: clamp(22px, 3vw, 28px);
         line-height: 1.2;
       }
 
-      .promo__body {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.65;
-      }
-
       .promo__actions {
         justify-content: flex-end;
+      }
+
+      .creator__draft {
+        width: 100%;
+        min-height: 220px;
+        resize: vertical;
+        margin-top: 14px;
+        border: 1px solid rgba(216, 177, 92, 0.18);
+        border-radius: 18px;
+        padding: 16px 18px;
+        background: rgba(10, 21, 34, 0.9);
+        color: inherit;
+        line-height: 1.6;
+      }
+
+      .creator__meta,
+      .quiz-summary,
+      .composer__status {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .docs__grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 16px;
+      }
+
+      .docs__card {
+        padding: 18px;
+        border: 1px solid rgba(216, 177, 92, 0.16);
+        border-radius: 20px;
+        background: rgba(11, 23, 36, 0.62);
+      }
+
+      .docs__card h3 {
+        margin: 0 0 10px;
+        font-size: 16px;
+      }
+
+      .docs__card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .docs__code {
+        margin: 10px 0 0;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: rgba(6, 14, 23, 0.9);
+        color: #f8e4af;
+        white-space: pre-wrap;
+        font-family: Consolas, "Courier New", monospace;
+        font-size: 13px;
       }
 
       .empty-state {
@@ -580,9 +895,32 @@ export class CisspBuddyPanel implements vscode.Disposable {
         color: var(--gold);
       }
 
-      .composer__status {
+      .composer__controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .composer__control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .composer__control label {
         color: var(--muted);
         font-size: 13px;
+      }
+
+      .composer__control select {
+        min-width: 88px;
+        border: 1px solid rgba(216, 177, 92, 0.24);
+        border-radius: 999px;
+        padding: 8px 12px;
+        background: rgba(10, 22, 36, 0.88);
+        color: inherit;
       }
 
       textarea {
@@ -598,7 +936,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
         line-height: 1.55;
       }
 
-      textarea:focus {
+      textarea:focus,
+      select:focus {
         outline: 2px solid rgba(216, 177, 92, 0.35);
         outline-offset: 2px;
       }
@@ -606,6 +945,14 @@ export class CisspBuddyPanel implements vscode.Disposable {
       .composer__actions {
         justify-content: space-between;
         margin-top: 14px;
+      }
+
+      @media (max-width: 900px) {
+        .two-up,
+        .promo,
+        .docs__grid {
+          grid-template-columns: 1fr;
+        }
       }
 
       @media (max-width: 720px) {
@@ -616,6 +963,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
         .hero,
         .promo,
+        .creator,
+        .docs,
         .composer,
         .message__bubble,
         .empty-state {
@@ -644,49 +993,109 @@ export class CisspBuddyPanel implements vscode.Disposable {
             <p class="hero__eyebrow">Johnny Avakian Presents</p>
             <h1 class="hero__title">CISSP Budyy</h1>
             <p class="hero__subtitle">
-              Ask a CISSP question, get a focused explanation, and finish every round with one
-              CISSP-style multiple-choice question. Export the session to PDF whenever you want a
-              printable review sheet.
+              A portfolio-grade CISSP study experience inside VS Code. Learn the topic,
+              take a guided multi-question quiz, export the transcript, and generate a
+              LinkedIn-ready post about the subject you just studied.
             </p>
           </div>
         </div>
         <p class="hero__guardrail">
-          Scoped to CISSP study and defensive security guidance only.
+          Defensive-only, CISSP-scoped, and designed to showcase thoughtful product engineering.
         </p>
         <div id="quickPrompts" class="quick-prompts"></div>
       </section>
 
-      <section class="promo">
-        <div>
-          <p class="promo__eyebrow">Portfolio And Referral Request</p>
-          <h2 class="promo__title">
-            Referrals for cybersecurity and senior engineer roles would mean a lot.
-          </h2>
-          <p class="promo__body">
-            Johnny is working on posting a CISSP prep blog on the portfolio site. Stars on the
-            CISSP Budyy repo and comments on the blog will be deeply appreciated.
-          </p>
+      <div class="stack">
+        <section class="promo">
+          <div>
+            <p class="section__eyebrow">Portfolio And Referral Request</p>
+            <h2 class="section__title">
+              Referrals for cybersecurity and senior engineer roles would mean a lot.
+            </h2>
+            <p class="section__body">
+              Johnny is working on posting a CISSP prep blog on the portfolio site. Stars on the
+              CISSP Budyy repo and comments on the blog are deeply appreciated.
+            </p>
+          </div>
+          <div class="promo__actions">
+            <button class="button--secondary" type="button" data-external-url="${PORTFOLIO_URL}">
+              Portfolio
+            </button>
+            <button class="button--secondary" type="button" data-external-url="${LINKEDIN_URL}">
+              LinkedIn
+            </button>
+            <button class="button--secondary" type="button" data-external-url="${REPO_URL}">
+              Star The Repo
+            </button>
+          </div>
+        </section>
+
+        <div class="two-up">
+          <section class="creator">
+            <p class="section__eyebrow">LinkedIn Showcase Draft</p>
+            <h2 class="section__title">Generate a post you can paste directly into LinkedIn.</h2>
+            <p class="section__body">
+              This uses the topic in the composer when present, or the most recent CISSP quiz
+              topic, and turns it into a professional thought-leadership post for Johnny Avakian.
+            </p>
+            <div class="creator__actions">
+              <button id="generateLinkedInButton" class="button--primary" type="button">
+                Generate LinkedIn Post
+              </button>
+              <button id="copyLinkedInButton" class="button--ghost" type="button">
+                Copy Draft
+              </button>
+            </div>
+            <textarea
+              id="linkedinDraft"
+              class="creator__draft"
+              readonly
+              placeholder="Generate a LinkedIn draft from the current topic or the most recent quiz topic."
+            ></textarea>
+            <div id="linkedinMeta" class="creator__meta">
+              Ready to create a polished post for your portfolio and LinkedIn showcase.
+            </div>
+          </section>
+
+          <section class="docs">
+            <p class="section__eyebrow">In-App Documentation</p>
+            <h2 class="section__title">Why this product exists, how it works, and how to launch it.</h2>
+            <div class="docs__grid">
+              <article class="docs__card">
+                <h3>Why It Exists</h3>
+                <p>
+                  CISSP Budyy demonstrates product thinking, educational UX, safe AI orchestration,
+                  and professional extension engineering in one portfolio-ready app.
+                </p>
+              </article>
+              <article class="docs__card">
+                <h3>How It Works</h3>
+                <p>
+                  A VS Code extension host coordinates a branded webview UI, GitHub Copilot model
+                  calls, quiz-session state, local guardrails, PDF export, and LinkedIn draft generation.
+                </p>
+              </article>
+              <article class="docs__card">
+                <h3>Launch Requirements</h3>
+                <p>
+                  VS Code 1.110+, GitHub Copilot Chat access, Node.js, and npm. Build with the commands below, then run the extension host or install the packaged VSIX.
+                </p>
+                <div class="docs__code">npm install
+npm run compile
+F5</div>
+              </article>
+            </div>
+            <div class="docs__actions" style="margin-top: 16px;">
+              <button class="button--secondary" type="button" data-external-url="${ARCHITECTURE_DOC_URL}">
+                Architecture Docs
+              </button>
+              <button class="button--secondary" type="button" data-external-url="${LAUNCH_DOC_URL}">
+                Launch Docs
+              </button>
+            </div>
+          </section>
         </div>
-        <div class="promo__actions">
-          <button
-            class="button--secondary"
-            type="button"
-            data-external-url="${PORTFOLIO_URL}"
-          >
-            Portfolio
-          </button>
-          <button
-            class="button--secondary"
-            type="button"
-            data-external-url="${LINKEDIN_URL}"
-          >
-            LinkedIn
-          </button>
-          <button class="button--secondary" type="button" data-external-url="${REPO_URL}">
-            Star The Repo
-          </button>
-        </div>
-      </section>
+      </div>
 
       <main id="transcript" class="transcript"></main>
 
@@ -695,6 +1104,16 @@ export class CisspBuddyPanel implements vscode.Disposable {
           <div class="composer__label">Study Composer</div>
           <div id="statusText" class="composer__status">
             Ask a CISSP topic or answer with A, B, C, or D.
+          </div>
+        </div>
+
+        <div class="composer__controls">
+          <div class="composer__control">
+            <label for="questionCount">Quiz length</label>
+            <select id="questionCount"></select>
+          </div>
+          <div id="quizSummary" class="quiz-summary">
+            Choose how many questions to ask on the next topic. Default is 1.
           </div>
         </div>
 
@@ -719,21 +1138,41 @@ export class CisspBuddyPanel implements vscode.Disposable {
     </div>
 
     <script nonce="${nonce}">
+      const MIN_QUIZ_QUESTIONS = ${MIN_QUIZ_QUESTIONS};
+      const MAX_QUIZ_QUESTIONS = ${MAX_QUIZ_QUESTIONS};
+
       const vscode = acquireVsCodeApi();
       const state = {
+        activeQuiz: null,
+        busyLabel: '',
         isBusy: false,
+        linkedinDraft: null,
         quickPrompts: [],
+        selectedQuestionCount: MIN_QUIZ_QUESTIONS,
         transcript: []
       };
 
       const quickPromptsElement = document.getElementById('quickPrompts');
       const transcriptElement = document.getElementById('transcript');
       const statusTextElement = document.getElementById('statusText');
+      const quizSummaryElement = document.getElementById('quizSummary');
       const promptForm = document.getElementById('promptForm');
       const promptInput = document.getElementById('promptInput');
+      const questionCountSelect = document.getElementById('questionCount');
       const sendButton = document.getElementById('sendButton');
       const exportButton = document.getElementById('exportButton');
       const resetButton = document.getElementById('resetButton');
+      const generateLinkedInButton = document.getElementById('generateLinkedInButton');
+      const copyLinkedInButton = document.getElementById('copyLinkedInButton');
+      const linkedinDraftElement = document.getElementById('linkedinDraft');
+      const linkedinMetaElement = document.getElementById('linkedinMeta');
+
+      for (let count = MIN_QUIZ_QUESTIONS; count <= MAX_QUIZ_QUESTIONS; count += 1) {
+        const option = document.createElement('option');
+        option.value = String(count);
+        option.textContent = String(count);
+        questionCountSelect.appendChild(option);
+      }
 
       function escapeHtml(value) {
         return value
@@ -742,6 +1181,10 @@ export class CisspBuddyPanel implements vscode.Disposable {
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#39;');
+      }
+
+      function selectedQuestionCount() {
+        return Number(questionCountSelect.value || state.selectedQuestionCount || MIN_QUIZ_QUESTIONS);
       }
 
       function renderQuickPrompts() {
@@ -761,8 +1204,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
         if (state.transcript.length === 0) {
           transcriptElement.innerHTML =
             '<section class="empty-state">' +
-            '<h2>Johnny Avakian Presents CISSP Budyy is ready.</h2>' +
-            '<p>Use one of the starter prompts above, ask your own question, or answer the next quiz with A, B, C, or D. CISSP Budyy will keep the loop focused on one explanation and one question at a time.</p>' +
+            '<h2>${BRAND_NAME} is ready.</h2>' +
+            '<p>Choose a quiz length, ask a CISSP topic, and the app will explain the concept and guide you through however many questions you selected. Afterward, generate a LinkedIn post and export the transcript if you want a showcase artifact.</p>' +
             '</section>';
           return;
         }
@@ -798,20 +1241,60 @@ export class CisspBuddyPanel implements vscode.Disposable {
         });
       }
 
+      function renderLinkedInDraft() {
+        linkedinDraftElement.value = state.linkedinDraft ? state.linkedinDraft.text : '';
+        linkedinMetaElement.textContent = state.linkedinDraft
+          ? 'Generated for "' + state.linkedinDraft.topic + '" on ' + state.linkedinDraft.generatedAt + '.'
+          : 'Generate a LinkedIn draft from the current topic in the composer or the most recent quiz topic.';
+      }
+
+      function renderQuizSummary() {
+        if (state.activeQuiz && state.activeQuiz.awaitingAnswer) {
+          quizSummaryElement.textContent =
+            'Active quiz: question ' +
+            state.activeQuiz.currentQuestion +
+            ' of ' +
+            state.activeQuiz.totalQuestions +
+            ' on ' +
+            state.activeQuiz.topic +
+            '.';
+          return;
+        }
+
+        if (state.activeQuiz && state.activeQuiz.completed) {
+          quizSummaryElement.textContent =
+            'Completed a ' +
+            state.activeQuiz.totalQuestions +
+            '-question quiz on ' +
+            state.activeQuiz.topic +
+            '. Choose a new topic to start another round.';
+          return;
+        }
+
+        quizSummaryElement.textContent =
+          'Choose how many questions to ask on the next topic. Default is 1.';
+      }
+
       function renderControls() {
         const trimmedInput = promptInput.value.trim();
+        statusTextElement.textContent = state.isBusy
+          ? state.busyLabel || 'Preparing your next study step...'
+          : 'Ask a CISSP topic or answer with A, B, C, or D.';
+        questionCountSelect.value = String(state.selectedQuestionCount || MIN_QUIZ_QUESTIONS);
         promptInput.disabled = state.isBusy;
+        questionCountSelect.disabled = state.isBusy;
         sendButton.disabled = state.isBusy || trimmedInput.length === 0;
         exportButton.disabled = state.transcript.length === 0;
         resetButton.disabled = state.transcript.length === 0 || state.isBusy;
-        statusTextElement.textContent = state.isBusy
-          ? 'CISSP Buddy is preparing your next explanation and question...'
-          : 'Ask a CISSP topic or answer with A, B, C, or D.';
+        generateLinkedInButton.disabled = state.isBusy;
+        copyLinkedInButton.disabled = !state.linkedinDraft || state.linkedinDraft.text.length === 0;
       }
 
       function render() {
         renderQuickPrompts();
         renderTranscript();
+        renderLinkedInDraft();
+        renderQuizSummary();
         renderControls();
       }
 
@@ -824,19 +1307,48 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
         promptInput.value = '';
         renderControls();
-        vscode.postMessage({ type: 'submitPrompt', text });
+        vscode.postMessage({
+          type: 'submitPrompt',
+          text,
+          questionCount: selectedQuestionCount()
+        });
       });
 
       promptInput.addEventListener('input', () => {
         renderControls();
       });
 
-        exportButton.addEventListener('click', () => {
+      questionCountSelect.addEventListener('change', () => {
+        vscode.postMessage({
+          type: 'setQuestionCount',
+          questionCount: selectedQuestionCount()
+        });
+      });
+
+      exportButton.addEventListener('click', () => {
         vscode.postMessage({ type: 'exportPdf' });
       });
 
       resetButton.addEventListener('click', () => {
         vscode.postMessage({ type: 'resetTranscript' });
+      });
+
+      generateLinkedInButton.addEventListener('click', () => {
+        vscode.postMessage({
+          type: 'generateLinkedInPost',
+          topic: promptInput.value.trim()
+        });
+      });
+
+      copyLinkedInButton.addEventListener('click', () => {
+        if (!state.linkedinDraft) {
+          return;
+        }
+
+        vscode.postMessage({
+          type: 'copyText',
+          text: state.linkedinDraft.text
+        });
       });
 
       quickPromptsElement.addEventListener('click', (event) => {
@@ -847,7 +1359,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
         vscode.postMessage({
           type: 'quickPrompt',
-          text: button.getAttribute('data-quick-prompt') || ''
+          text: button.getAttribute('data-quick-prompt') || '',
+          questionCount: selectedQuestionCount()
         });
       });
 
@@ -868,8 +1381,12 @@ export class CisspBuddyPanel implements vscode.Disposable {
           return;
         }
 
+        state.activeQuiz = event.data.payload.activeQuiz;
+        state.busyLabel = event.data.payload.busyLabel;
         state.isBusy = event.data.payload.isBusy;
+        state.linkedinDraft = event.data.payload.linkedinDraft;
         state.quickPrompts = event.data.payload.quickPrompts;
+        state.selectedQuestionCount = event.data.payload.selectedQuestionCount;
         state.transcript = event.data.payload.transcript;
         render();
       });
@@ -880,6 +1397,14 @@ export class CisspBuddyPanel implements vscode.Disposable {
   </body>
 </html>`;
   }
+}
+
+function clampQuestionCount(questionCount: number): number {
+  if (!Number.isFinite(questionCount)) {
+    return MIN_QUIZ_QUESTIONS;
+  }
+
+  return Math.min(MAX_QUIZ_QUESTIONS, Math.max(MIN_QUIZ_QUESTIONS, Math.round(questionCount)));
 }
 
 function getNonce(): string {

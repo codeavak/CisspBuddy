@@ -81,7 +81,7 @@ function includesAnyKeyword(haystack: string, keywords: readonly string[]): bool
   return keywords.some((keyword) => haystack.includes(keyword));
 }
 
-function isChoiceAnswer(value: string): boolean {
+export function isChoiceAnswer(value: string): boolean {
   return /^[abcd]$/i.test(value.trim());
 }
 
@@ -119,7 +119,7 @@ export function evaluatePrompt(
     return {
       allowed: false,
       response: [
-        'CISSP Buddy stays on safe, defensive CISSP study help.',
+        'Johnny Avakian Presents CISSP Budyy stays on safe, defensive CISSP study help.',
         '',
         'I cannot help with offensive or harmful cyber instructions.',
         'If you want, ask about the defensive principles, risk implications, or exam concepts behind that topic instead.'
@@ -134,10 +134,9 @@ export function evaluatePrompt(
   return {
     allowed: false,
     response: [
-      'CISSP Buddy is scoped to CISSP study and defensive security concepts.',
+      'Johnny Avakian Presents CISSP Budyy is scoped to CISSP study and defensive security concepts.',
       '',
       'Try asking about one of the CISSP domains, a security principle, or a practice question instead.'
     ].join('\n')
   };
 }
-

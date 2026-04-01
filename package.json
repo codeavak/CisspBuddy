@@ -15,6 +15,12 @@
   "categories": [
     "Chat"
   ],
+  "files": [
+    "out",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
   "activationEvents": [
     "onChatParticipant:cisspbuddy.cissp-buddy"
   ],

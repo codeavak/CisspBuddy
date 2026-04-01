@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Johnny Avakian's CISSP Buddy is designed as both a practical CISSP study tool and a portfolio-quality engineering artifact. The product goals are:
+Johnny Avakian's CISSP Buddy is designed as a serious CISSP study tool for candidates who want clearer explanations, better recall, and stronger exam readiness. The product goals are:
 
 - deliver a polished in-editor study workflow instead of a basic AI chat transcript
 - keep the AI experience tightly scoped to CISSP and defensive security concepts
 - demonstrate thoughtful state management for multi-question quizzes
-- provide export and content-generation features that help the product stand out in demos and on LinkedIn
+- provide export and content-generation features that support review, reflection, and consistent study habits
 
 ## System Design
 
@@ -36,7 +36,7 @@ The extension uses a standard VS Code extension-host architecture:
 
 5. `src/pdf.ts`
    - creates PDF output without adding a heavyweight PDF dependency
-   - generates a transcript artifact suitable for demos, sharing, and study review
+   - generates a transcript PDF suitable for study review, mentoring, sharing, and accountability
 
 6. `media/`
    - contains brand assets for the extension tile and in-app experience
@@ -94,7 +94,7 @@ The LinkedIn generator is intentionally separate from the quiz transcript flow:
 - it stores the output as a separate `LinkedInDraft`
 - it supports copy-to-clipboard without polluting the quiz transcript
 
-This separation helps the app demonstrate product breadth while keeping the study experience clean.
+This separation helps the app support reflection and sharing without disrupting the core study experience.
 
 ## Guardrail Strategy
 
@@ -123,24 +123,24 @@ The webview is a core product decision, not just a UI choice:
   - LinkedIn draft studio
   - documentation cards
   - branded calls to action
-- it improves the project's value as a portfolio showcase
+- it supports a focused, dedicated study environment that feels separate from a generic chat thread
 
 ## Engineering Tradeoffs
 
 - the extension host is TypeScript because that is the native integration model for VS Code chat participants and webviews
 - the PDF generator is lightweight and dependency-free to reduce package weight and review complexity
 - quiz-state orchestration is kept in the extension rather than trusting the model alone, which improves consistency for multi-question sessions
-- documentation is duplicated in both the app and GitHub because the project serves both end users and portfolio reviewers
+- documentation is duplicated in both the app and GitHub because the project serves both end users and maintainers
 
 ## Documentation As Part Of The Architecture
 
 Documentation is treated as a product feature, not a project afterthought:
 
-- the app contains summary-level documentation for live demos
-- GitHub contains deeper references for users, reviewers, and maintainers
-- the docs are cross-linked so setup, architecture, troubleshooting, and showcase flows can be followed without guesswork
+- the app contains summary-level documentation for day-to-day use and onboarding
+- GitHub contains deeper references for users, contributors, and maintainers
+- the docs are cross-linked so setup, architecture, troubleshooting, and learning flows can be followed without guesswork
 
-That decision matters because this project is meant to function as both a usable study assistant and a professional portfolio artifact.
+That decision matters because this project is meant to be a dependable CISSP study companion that candidates can actually use.
 
 ## Key Files
 

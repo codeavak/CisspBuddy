@@ -29,7 +29,7 @@ The standalone app design creates room for product features that do not fit well
 - PDF export
 - LinkedIn draft generation
 - in-app documentation
-- branding and portfolio calls to action
+- branding, website links, and community calls to action
 
 ## Why Is The Study Composer Floating?
 
@@ -79,7 +79,7 @@ Use this order:
 2. `docs/USER_GUIDE.md`
 3. `docs/TROUBLESHOOTING.md` if needed
 
-## Where Should A Reviewer Or Recruiter Start?
+## Where Should A Curious Evaluator Start?
 
 Use this order:
 
@@ -95,9 +95,9 @@ Use this order:
 2. `docs/TROUBLESHOOTING.md`
 3. `docs/ARCHITECTURE.md`
 
-## What Makes This Portfolio-Worthy?
+## What Makes This Feel Like A Serious Study Product?
 
-The project demonstrates more than prompt wiring. It shows:
+The product is built to do more than answer isolated prompts. It shows:
 
 - intentional product design inside VS Code
 - stateful AI-assisted quiz orchestration

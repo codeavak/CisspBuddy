@@ -2,7 +2,7 @@
 
 ## Audience
 
-This guide is for maintainers, reviewers, and anyone who wants a step-by-step path for running, packaging, validating, and shipping Johnny Avakian's CISSP Buddy.
+This guide is for maintainers, contributors, and anyone who wants a step-by-step path for running, packaging, validating, and shipping Johnny Avakian's CISSP Buddy.
 
 ## Runtime Requirements
 
@@ -44,7 +44,7 @@ You should see:
 - quiz-length selection from `1` to `10`
 - the detailed wrong-answer explanation toggle
 - the prompt composer and quick prompts
-- documentation cards, portfolio links, LinkedIn draft tools, and export controls
+- documentation cards, website links, LinkedIn draft tools, and export controls
 
 If the app opens but model responses never arrive, the most likely issue is Copilot Chat availability or sign-in state.
 
@@ -65,7 +65,7 @@ cissp-buddy-<version>.vsix
 Example:
 
 ```text
-cissp-buddy-0.0.6.vsix
+cissp-buddy-0.0.15.vsix
 ```
 
 ## Installing Or Updating The Packaged Extension
@@ -79,7 +79,7 @@ code --install-extension cissp-buddy-<version>.vsix --force
 Example:
 
 ```bash
-code --install-extension cissp-buddy-0.0.6.vsix --force
+code --install-extension cissp-buddy-0.0.15.vsix --force
 ```
 
 After installation:
@@ -137,9 +137,9 @@ After validation:
 
 If unrelated local files exist, leave them untouched unless they are part of the requested change.
 
-## Demo Flow For LinkedIn Or Portfolio Reviews
+## Demo Flow For LinkedIn Or Product Walkthroughs
 
-Use this sequence to showcase the product professionally:
+Use this sequence to walk through the product clearly:
 
 1. Open the branded standalone app
 2. Set quiz length to a value greater than `1`
@@ -149,6 +149,6 @@ Use this sequence to showcase the product professionally:
 6. Generate a LinkedIn post from the same topic
 7. Copy the draft
 8. Export the transcript to PDF
-9. Open the portfolio and repo links from inside the app
+9. Open the website and repo links from inside the app
 
 For a presenter-friendly walkthrough, pair this guide with [DEMO_SCRIPT.md](DEMO_SCRIPT.md).

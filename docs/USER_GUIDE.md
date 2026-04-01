@@ -29,17 +29,17 @@ The app opens as its own editor tab inside VS Code.
 
 This is the branded app header. It explains the purpose of the product and shows starter prompts.
 
-### Portfolio And Referral Section
+### Website And Referral Section
 
 This section contains buttons for:
 
-- Portfolio
+- Website
 - LinkedIn
 - Star The Repo
 
 These open external links in your browser.
 
-### LinkedIn Showcase Draft
+### LinkedIn Draft
 
 This section lets you generate a professional LinkedIn post based on:
 
@@ -51,7 +51,7 @@ Buttons:
 - `Generate LinkedIn Post`
 - `Copy Draft`
 
-The same LinkedIn actions are also available in the floating Study Composer so you do not need to scroll back up to the showcase panel on smaller screens.
+The same LinkedIn actions are also available in the floating Study Composer so you do not need to scroll back up to the LinkedIn panel on smaller screens.
 
 If a quiz question is currently waiting for your answer, the LinkedIn button changes to make that obvious and the app tells you to reply with `A`, `B`, `C`, or `D` before generating the post.
 
@@ -113,7 +113,7 @@ If you are on a lower-resolution display or a shorter editor window:
 5. Answer the quiz question with `A`, `B`, `C`, or `D`
 6. Continue until the selected number of questions is complete
 7. Generate a LinkedIn post if desired
-8. Export the transcript to PDF if you want a saved artifact
+8. Export the transcript to PDF if you want a saved study record
 
 ## How Quiz Length Works
 
@@ -140,7 +140,7 @@ This setting is useful when:
 
 - you want deeper exam reasoning
 - you want to learn how distractors differ from the best answer
-- you want stronger study artifacts for demos or portfolio screenshots
+- you want richer study notes and deeper answer review
 
 ## How The LinkedIn Post Generator Works
 
@@ -164,8 +164,8 @@ The generated post is not auto-published. You copy it and paste it into LinkedIn
 This is useful for:
 
 - study review
-- client or recruiter demos
-- keeping examples of the product output
+- mentoring or accountability
+- keeping reusable study notes
 
 ## What The Guardrails Mean
 
@@ -202,6 +202,6 @@ If you want the app to look strong in a demo, these topics work well:
 
 - Use shorter topic prompts for the cleanest output
 - Turn on detailed wrong-answer review when you want richer explanations
-- Use quiz lengths greater than `1` for stronger demos
+- Use quiz lengths greater than `1` for deeper practice sessions
 - Generate the LinkedIn draft after a completed quiz for better topic framing
-- Export the transcript after a good run so you keep a reusable artifact
+- Export the transcript after a good run so you keep reusable study notes

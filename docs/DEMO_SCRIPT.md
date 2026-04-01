@@ -2,7 +2,7 @@
 
 ## Goal
 
-This script is designed to help Johnny Avakian present CISSP Buddy professionally on LinkedIn, in interviews, or in portfolio walkthroughs.
+This script is designed to help Johnny Avakian explain CISSP Buddy clearly on LinkedIn, in interviews, or in product walkthroughs.
 
 ## Setup
 
@@ -35,17 +35,17 @@ Before the demo:
 8. Generate a LinkedIn post from the topic
 9. Copy the draft
 10. Export the transcript to PDF
-11. Open the portfolio and repo links from inside the app
+11. Open the website and repo links from inside the app
 
 ## Talking Points
 
 - The product is scoped intentionally to CISSP and defensive security
 - The quiz flow is stateful and guided, not just free-form prompting
 - Wrong-answer review depth is configurable
-- The app creates portfolio artifacts:
+- The app creates reusable study outputs:
   - LinkedIn post drafts
-  - PDF transcripts
-- The documentation is designed for both users and reviewers
+  - PDF study transcripts
+- The documentation is designed for both learners and maintainers
 
 ## Best Demo Topics
 

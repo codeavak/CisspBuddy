@@ -41,7 +41,7 @@ type WebviewMessage =
   | { type: 'openExternal'; url: string };
 
 const BRAND_NAME = 'Johnny Avakian\'s CISSP Buddy';
-const PORTFOLIO_URL = 'https://codeavak.github.io/portfolio_website/';
+const WEBSITE_URL = 'https://codeavak.github.io/portfolio_website/';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/codeavak';
 const REPO_URL = 'https://github.com/codeavak/cisspbuddy';
 const ARCHITECTURE_DOC_URL = `${REPO_URL}/blob/master/docs/ARCHITECTURE.md`;
@@ -397,7 +397,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     const draftText = await this.captureModelResponse(
       messages,
-      'Drafting a showcase-ready LinkedIn post...'
+      'Drafting a professional LinkedIn post...'
     );
 
     if (!draftText) {
@@ -1170,14 +1170,14 @@ export class CisspBuddyPanel implements vscode.Disposable {
             <p class="hero__eyebrow">Johnny Avakian's</p>
             <h1 class="hero__title">CISSP Buddy</h1>
             <p class="hero__subtitle">
-              A portfolio-grade CISSP study experience inside VS Code. Learn the topic,
-              take a guided multi-question quiz, export the transcript, and generate a
-              LinkedIn-ready post about the subject you just studied.
+              A serious CISSP study companion inside VS Code. Learn the topic, take a
+              guided multi-question quiz, export your study notes, and turn completed
+              topics into thoughtful LinkedIn posts when you want to share what you learned.
             </p>
           </div>
         </div>
         <p class="hero__guardrail">
-          Defensive-only, CISSP-scoped, and designed to showcase thoughtful product engineering.
+          Defensive-only, CISSP-scoped, and built to help candidates study with clarity, discipline, and confidence.
         </p>
         <div id="quickPrompts" class="quick-prompts"></div>
       </section>
@@ -1185,18 +1185,19 @@ export class CisspBuddyPanel implements vscode.Disposable {
       <div class="stack">
         <section class="promo">
           <div>
-            <p class="section__eyebrow">Portfolio And Referral Request</p>
+            <p class="section__eyebrow">Website, Mission, And Referrals</p>
             <h2 class="section__title">
-              Referrals for cybersecurity and senior engineer roles would mean a lot.
+              Built as a gift to CISSP candidates who want to study smarter and succeed.
             </h2>
             <p class="section__body">
-              Johnny is working on posting a CISSP prep blog on the portfolio site. Stars on the
-              CISSP Buddy repo and comments on the blog are deeply appreciated.
+              Johnny is working on posting a CISSP prep blog on the website. Stars on the
+              CISSP Buddy repo and comments on the blog are deeply appreciated, and referrals
+              for cybersecurity or senior engineer roles are always welcome.
             </p>
           </div>
           <div class="promo__actions">
-            <button class="button--secondary" type="button" data-external-url="${PORTFOLIO_URL}">
-              Portfolio
+            <button class="button--secondary" type="button" data-external-url="${WEBSITE_URL}">
+              Website
             </button>
             <button class="button--secondary" type="button" data-external-url="${LINKEDIN_URL}">
               LinkedIn
@@ -1209,7 +1210,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
         <div class="two-up">
           <section class="creator">
-            <p class="section__eyebrow">LinkedIn Showcase Draft</p>
+            <p class="section__eyebrow">LinkedIn Draft</p>
             <h2 class="section__title">Generate a post you can paste directly into LinkedIn.</h2>
             <p class="section__body">
               This uses the topic in the composer when present, or the most recent CISSP quiz
@@ -1230,7 +1231,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
               placeholder="Generate a LinkedIn draft from the current topic or the most recent quiz topic."
             ></textarea>
             <div id="linkedinMeta" class="creator__meta">
-              Ready to create a polished post for your portfolio and LinkedIn showcase.
+              Ready to turn a completed study topic into a thoughtful LinkedIn post.
             </div>
           </section>
 
@@ -1241,8 +1242,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
               <article class="docs__card">
                 <h3>Why It Exists</h3>
                 <p>
-                  CISSP Buddy demonstrates product thinking, educational UX, safe AI orchestration,
-                  and professional extension engineering in one portfolio-ready app.
+                  CISSP Buddy exists to help candidates study smarter with clear explanations,
+                  disciplined practice, and a calmer path toward exam success.
                 </p>
               </article>
               <article class="docs__card">
@@ -1263,7 +1264,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
               <article class="docs__card">
                 <h3>FAQ</h3>
                 <p>
-                  Fast answers to the questions users, reviewers, and recruiters usually ask about
+                  Fast answers to the practical questions users and maintainers usually ask about
                   the architecture, guardrails, scope, and why the app is built this way.
                 </p>
               </article>
@@ -1286,7 +1287,7 @@ F5</div>
               <article class="docs__card">
                 <h3>Demo Script</h3>
                 <p>
-                  A ready-to-use showcase script for interviews, LinkedIn demos, and portfolio walkthroughs.
+                  A clear walkthrough script for interviews, LinkedIn demos, and product introductions.
                 </p>
               </article>
             </div>
@@ -1470,7 +1471,7 @@ F5</div>
             '<h2>' +
             escapeHtml(BRAND_NAME_TEXT) +
             ' is ready.</h2>' +
-            '<p>Choose a quiz length, ask a CISSP topic, and the app will explain the concept and guide you through however many questions you selected. Afterward, generate a LinkedIn post and export the transcript if you want a showcase artifact.</p>' +
+            '<p>Choose a quiz length, ask a CISSP topic, and the app will explain the concept and guide you through however many questions you selected. Afterward, generate a LinkedIn post and export the transcript if you want reusable study notes.</p>' +
             '</section>';
           return;
         }

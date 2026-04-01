@@ -35,7 +35,7 @@ type WebviewMessage =
   | { type: 'resetTranscript' }
   | { type: 'openExternal'; url: string };
 
-const BRAND_NAME = 'Johnny Avakian Presents CISSP Budyy';
+const BRAND_NAME = 'Johnny Avakian Presents CISSP Buddy';
 const PORTFOLIO_URL = 'https://github.com/codeavak/portfolio_website';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/codeavak';
 const REPO_URL = 'https://github.com/codeavak/cisspbuddy';
@@ -89,7 +89,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
     this.panel = panel;
     this.extensionUri = extensionUri;
-    this.panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-budyy-icon.png');
+    this.panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-icon.png');
     this.panel.webview.html = this.getHtml(this.panel.webview);
 
     this.disposables.push(
@@ -140,7 +140,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       return;
     }
 
-    const suggestedName = `johnny-avakian-presents-cissp-budyy-${new Date()
+    const suggestedName = `johnny-avakian-presents-cissp-buddy-${new Date()
       .toISOString()
       .replace(/[:.]/g, '-')
       .slice(0, 19)}.pdf`;
@@ -561,7 +561,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private getHtml(webview: vscode.Webview): string {
     const nonce = getNonce();
     const logoUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-budyy-logo.svg')
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-logo.svg')
     );
 
     return `<!DOCTYPE html>
@@ -573,7 +573,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       content="default-src 'none'; img-src ${webview.cspSource} data:; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Johnny Avakian Presents CISSP Budyy</title>
+    <title>Johnny Avakian Presents CISSP Buddy</title>
     <style nonce="${nonce}">
       :root {
         color-scheme: light dark;
@@ -1104,10 +1104,10 @@ export class CisspBuddyPanel implements vscode.Disposable {
     <div class="shell">
       <section class="hero">
         <div class="hero__brand">
-          <img class="hero__logo" src="${logoUri}" alt="CISSP Budyy logo" />
+          <img class="hero__logo" src="${logoUri}" alt="CISSP Buddy logo" />
           <div>
             <p class="hero__eyebrow">Johnny Avakian Presents</p>
-            <h1 class="hero__title">CISSP Budyy</h1>
+            <h1 class="hero__title">CISSP Buddy</h1>
             <p class="hero__subtitle">
               A portfolio-grade CISSP study experience inside VS Code. Learn the topic,
               take a guided multi-question quiz, export the transcript, and generate a
@@ -1130,7 +1130,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
             </h2>
             <p class="section__body">
               Johnny is working on posting a CISSP prep blog on the portfolio site. Stars on the
-              CISSP Budyy repo and comments on the blog are deeply appreciated.
+              CISSP Buddy repo and comments on the blog are deeply appreciated.
             </p>
           </div>
           <div class="promo__actions">
@@ -1180,7 +1180,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
               <article class="docs__card">
                 <h3>Why It Exists</h3>
                 <p>
-                  CISSP Budyy demonstrates product thinking, educational UX, safe AI orchestration,
+                  CISSP Buddy demonstrates product thinking, educational UX, safe AI orchestration,
                   and professional extension engineering in one portfolio-ready app.
                 </p>
               </article>
@@ -1296,7 +1296,7 @@ F5</div>
                 </div>
                 <div class="composer__actions-right">
                   <button id="sendButton" class="button--primary" type="submit">
-                    Ask CISSP Budyy
+                    Ask CISSP Buddy
                   </button>
                 </div>
               </div>
@@ -1405,7 +1405,7 @@ F5</div>
 
         transcriptElement.innerHTML = state.transcript
           .map((entry) => {
-            const roleLabel = entry.role === 'user' ? 'You' : 'CISSP Budyy';
+            const roleLabel = entry.role === 'user' ? 'You' : 'CISSP Buddy';
             const messageClass = entry.role === 'user' ? 'message message--user' : 'message';
             return (
               '<article class="' +

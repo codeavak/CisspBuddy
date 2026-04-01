@@ -2,7 +2,7 @@
 
 ## Goal
 
-This script is designed to help Johnny Avakian present CISSP Budyy professionally on LinkedIn, in interviews, or in portfolio walkthroughs.
+This script is designed to help Johnny Avakian present CISSP Buddy professionally on LinkedIn, in interviews, or in portfolio walkthroughs.
 
 ## Setup
 

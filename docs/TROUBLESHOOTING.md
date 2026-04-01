@@ -22,7 +22,7 @@ If something is not working, check these first:
 ### Checks
 
 - Open the Command Palette and search for:
-  - `Johnny Avakian Presents CISSP Budyy: Open Study App`
+  - `Johnny Avakian Presents CISSP Buddy: Open Study App`
 - If it is missing:
   - confirm the extension is installed
   - reload VS Code with `Developer: Reload Window`
@@ -154,4 +154,3 @@ Use [docs/LAUNCHING.md](docs/LAUNCHING.md).
 ## I Just Want To Use The App As An End User
 
 Use [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
-

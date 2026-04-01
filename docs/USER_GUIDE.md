@@ -1,8 +1,8 @@
 # User Guide
 
-## What CISSP Budyy Does
+## What CISSP Buddy Does
 
-Johnny Avakian Presents CISSP Budyy is a guided CISSP study application inside Visual Studio Code. It is not a general-purpose chatbot. It is designed to:
+Johnny Avakian Presents CISSP Buddy is a guided CISSP study application inside Visual Studio Code. It is not a general-purpose chatbot. It is designed to:
 
 - explain CISSP topics in exam-friendly language
 - quiz the user on the topic
@@ -16,7 +16,7 @@ Johnny Avakian Presents CISSP Budyy is a guided CISSP study application inside V
 You can open the app in either of these ways:
 
 1. Command Palette
-   - Run `Johnny Avakian Presents CISSP Budyy: Open Study App`
+   - Run `Johnny Avakian Presents CISSP Buddy: Open Study App`
 
 2. GitHub Copilot Chat
    - Type `/cissp-buddy`
@@ -60,7 +60,7 @@ This section links directly to the longer GitHub documentation.
 This area shows the actual study session:
 
 - your prompts
-- CISSP Budyy explanations
+- CISSP Buddy explanations
 - quiz questions
 - answer reviews
 - session wrap-up
@@ -84,7 +84,7 @@ Controls:
   - enter a CISSP topic or answer with `A`, `B`, `C`, or `D`
 - `New Session`
 - `Export PDF`
-- `Ask CISSP Budyy`
+- `Ask CISSP Buddy`
 
 ### Reading On Smaller Screens
 

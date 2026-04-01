@@ -2,7 +2,7 @@
 
 ## Audience
 
-This guide is for maintainers, reviewers, and anyone who wants a step-by-step path for running, packaging, validating, and shipping Johnny Avakian Presents CISSP Budyy.
+This guide is for maintainers, reviewers, and anyone who wants a step-by-step path for running, packaging, validating, and shipping Johnny Avakian Presents CISSP Buddy.
 
 ## Runtime Requirements
 
@@ -33,7 +33,7 @@ If compilation fails, stop there and use [TROUBLESHOOTING.md](TROUBLESHOOTING.md
 2. Press `F5`
 3. Wait for the Extension Development Host window to appear
 4. In that window, open the app using either:
-   - Command Palette: `Johnny Avakian Presents CISSP Budyy: Open Study App`
+   - Command Palette: `Johnny Avakian Presents CISSP Buddy: Open Study App`
    - GitHub Copilot Chat: `/cissp-buddy`
 
 ## What A Healthy Development Launch Looks Like

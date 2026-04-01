@@ -14,7 +14,7 @@ That makes TypeScript the right fit for the current product architecture.
 
 ## Does The App Use GitHub Copilot?
 
-Yes. CISSP Budyy uses GitHub Copilot Chat for model-backed explanations, quiz turns, grading, and LinkedIn draft generation.
+Yes. CISSP Buddy uses GitHub Copilot Chat for model-backed explanations, quiz turns, grading, and LinkedIn draft generation.
 
 ## Does This Replace Copilot Chat?
 

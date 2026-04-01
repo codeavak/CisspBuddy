@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Johnny Avakian Presents CISSP Budyy is designed as both a practical CISSP study tool and a portfolio-quality engineering artifact. The product goals are:
+Johnny Avakian Presents CISSP Buddy is designed as both a practical CISSP study tool and a portfolio-quality engineering artifact. The product goals are:
 
 - deliver a polished in-editor study workflow instead of a basic AI chat transcript
 - keep the AI experience tightly scoped to CISSP and defensive security concepts
@@ -149,5 +149,5 @@ That decision matters because this project is meant to function as both a usable
 - `src/prompts.ts`
 - `src/guardrails.ts`
 - `src/pdf.ts`
-- `media/cissp-budyy-icon.png`
-- `media/cissp-budyy-logo.svg`
+- `media/cissp-buddy-icon.png`
+- `media/cissp-buddy-logo.svg`

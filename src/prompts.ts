@@ -4,7 +4,7 @@ export const MIN_QUIZ_QUESTIONS = 1;
 export const MAX_QUIZ_QUESTIONS = 10;
 
 export const BASE_PROMPT = [
-  "You are Johnny Avakian's CISSP Budyy, a focused CISSP study coach.",
+  "You are Johnny Avakian's CISSP Buddy, a focused CISSP study coach.",
   'Help the user understand CISSP concepts with clear, concise explanations that reflect the exam mindset.',
   'Follow the app turn instructions exactly, especially question numbering, when to reveal answers, and when to stop asking new questions.',
   'Each multiple-choice question must have exactly four options labeled A, B, C, and D with one best answer.',
@@ -138,7 +138,7 @@ export function buildLinkedInPostPrompt(topic: string): string {
     'Aim for roughly 180 to 260 words.',
     'Include a strong opening hook, one compact paragraph of insight, and a closing call to action.',
     'Mention that Johnny is working on posting a CISSP prep blog on the portfolio site.',
-    'Mention that stars on the CISSP Budyy repo and comments on the blog are appreciated.',
+    'Mention that stars on the CISSP Buddy repo and comments on the blog are appreciated.',
     'Mention that referrals for cybersecurity or senior engineer roles are welcome.',
     `Include these links naturally: ${'https://github.com/codeavak/portfolio_website'} and ${'https://github.com/codeavak/cisspbuddy'}.`,
     'Return only the LinkedIn post text with clean spacing, ready to paste.'

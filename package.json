@@ -1,10 +1,10 @@
 {
   "name": "cissp-buddy",
-  "displayName": "Johnny Avakian Presents CISSP Budyy",
+  "displayName": "Johnny Avakian Presents CISSP Buddy",
   "description": "Johnny Avakian presents a portfolio-grade VS Code CISSP study app with a floating study composer, guided quizzes, detailed wrong-answer review, LinkedIn draft generation, PDF export, defensive guardrails, and complete documentation.",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "codeavak",
-  "icon": "media/cissp-budyy-icon.png",
+  "icon": "media/cissp-buddy-icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -33,34 +33,34 @@
     "commands": [
       {
         "command": "cisspBuddy.openApp",
-        "title": "Johnny Avakian Presents CISSP Budyy: Open Study App"
+        "title": "Johnny Avakian Presents CISSP Buddy: Open Study App"
       },
       {
         "command": "cisspBuddy.exportTranscriptPdf",
-        "title": "Johnny Avakian Presents CISSP Budyy: Export Transcript as PDF"
+        "title": "Johnny Avakian Presents CISSP Buddy: Export Transcript as PDF"
       }
     ],
     "chatParticipants": [
       {
         "id": "cisspbuddy.cissp-buddy",
         "name": "cissp-buddy",
-        "fullName": "Johnny Avakian Presents CISSP Budyy",
-        "description": "Open Johnny Avakian's standalone CISSP Budyy study app inside VS Code.",
+        "fullName": "Johnny Avakian Presents CISSP Buddy",
+        "description": "Open Johnny Avakian's standalone CISSP Buddy study app inside VS Code.",
         "isSticky": true,
         "commands": [
           {
             "name": "cissp-buddy",
-            "description": "Open CISSP Budyy and optionally send it a topic."
+            "description": "Open CISSP Buddy and optionally send it a topic."
           }
         ],
         "disambiguation": [
           {
             "category": "learning",
-            "description": "Use this to launch Johnny Avakian's CISSP Budyy study app for CISSP concepts and practice questions.",
+            "description": "Use this to launch Johnny Avakian's CISSP Buddy study app for CISSP concepts and practice questions.",
             "examples": [
-              "Open CISSP Budyy and explain least privilege.",
-              "Launch CISSP Budyy with due care vs due diligence.",
-              "Start CISSP Budyy and quiz me on business continuity."
+              "Open CISSP Buddy and explain least privilege.",
+              "Launch CISSP Buddy with due care vs due diligence.",
+              "Start CISSP Buddy and quiz me on business continuity."
             ]
           }
         ]

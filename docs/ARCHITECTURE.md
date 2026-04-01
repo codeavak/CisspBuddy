@@ -150,4 +150,4 @@ That decision matters because this project is meant to be a dependable CISSP stu
 - `src/guardrails.ts`
 - `src/pdf.ts`
 - `media/cissp-buddy-icon.png`
-- `media/cissp-buddy-logo.svg`
+- `media/cissp-buddy-logo.png`

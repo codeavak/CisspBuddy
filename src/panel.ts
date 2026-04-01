@@ -622,7 +622,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private getHtml(webview: vscode.Webview): string {
     const nonce = getNonce();
     const logoUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-logo.svg')
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-logo.png')
     );
 
     return `<!DOCTYPE html>
@@ -708,16 +708,20 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
       .hero__brand {
         display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 18px;
-        align-items: center;
+        gap: 22px;
+        align-items: start;
       }
 
       .hero__logo {
-        width: 86px;
-        height: 86px;
-        border-radius: 22px;
+        width: min(100%, 620px);
+        height: auto;
+        display: block;
+        border-radius: 28px;
         box-shadow: 0 16px 30px rgba(0, 0, 0, 0.24);
+      }
+
+      .hero__copy {
+        max-width: 820px;
       }
 
       .hero__eyebrow,
@@ -1166,13 +1170,14 @@ export class CisspBuddyPanel implements vscode.Disposable {
       <section class="hero">
         <div class="hero__brand">
           <img class="hero__logo" src="${logoUri}" alt="CISSP Buddy logo" />
-          <div>
-            <p class="hero__eyebrow">Johnny Avakian's</p>
-            <h1 class="hero__title">CISSP Buddy</h1>
+          <div class="hero__copy">
+            <p class="hero__eyebrow">Study Better For CISSP</p>
+            <h1 class="hero__title">Clear explanations, disciplined practice, and smarter preparation.</h1>
             <p class="hero__subtitle">
-              A serious CISSP study companion inside VS Code. Learn the topic, take a
-              guided multi-question quiz, export your study notes, and turn completed
-              topics into thoughtful LinkedIn posts when you want to share what you learned.
+              Built to help CISSP candidates study better, think more clearly, and succeed.
+              Learn the topic, take a guided multi-question quiz, export your study notes,
+              and turn completed topics into thoughtful LinkedIn posts when you want to share
+              what you learned.
             </p>
           </div>
         </div>

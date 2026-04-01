@@ -1,5 +1,7 @@
 # Johnny Avakian's CISSP Buddy
 
+![CISSP Buddy logo](media/cissp-buddy-logo.png)
+
 Johnny Avakian's CISSP Buddy is a mission-driven Visual Studio Code study companion built to help CISSP candidates study better, think more clearly, and succeed on the exam. It opens as a standalone app inside VS Code, explains CISSP topics in exam-friendly language, runs guided multi-question quizzes, exports transcripts to PDF, and generates professional LinkedIn posts from the topic you studied.
 
 ## What This Product Is Built To Do
@@ -70,7 +72,7 @@ npx @vscode/vsce package --no-yarn
 Install the packaged extension:
 
 ```bash
-code --install-extension cissp-buddy-0.0.15.vsix --force
+code --install-extension cissp-buddy-0.0.16.vsix --force
 ```
 
 If VS Code still shows the previous version after install, run `Developer: Reload Window`.

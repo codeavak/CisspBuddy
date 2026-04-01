@@ -41,6 +41,10 @@ const LINKEDIN_URL = 'https://www.linkedin.com/in/codeavak';
 const REPO_URL = 'https://github.com/codeavak/cisspbuddy';
 const ARCHITECTURE_DOC_URL = `${REPO_URL}/blob/master/docs/ARCHITECTURE.md`;
 const LAUNCH_DOC_URL = `${REPO_URL}/blob/master/docs/LAUNCHING.md`;
+const USER_GUIDE_DOC_URL = `${REPO_URL}/blob/master/docs/USER_GUIDE.md`;
+const FAQ_DOC_URL = `${REPO_URL}/blob/master/docs/FAQ.md`;
+const TROUBLESHOOTING_DOC_URL = `${REPO_URL}/blob/master/docs/TROUBLESHOOTING.md`;
+const DEMO_SCRIPT_DOC_URL = `${REPO_URL}/blob/master/docs/DEMO_SCRIPT.md`;
 
 export class CisspBuddyPanel implements vscode.Disposable {
   private static currentPanel: CisspBuddyPanel | undefined;
@@ -814,7 +818,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
       .docs__grid {
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
         gap: 14px;
         margin-top: 16px;
       }
@@ -1112,7 +1116,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
           <section class="docs">
             <p class="section__eyebrow">In-App Documentation</p>
-            <h2 class="section__title">Why this product exists, how it works, and how to launch it.</h2>
+            <h2 class="section__title">Why it exists, how it works, how to use it, and how to recover when something goes wrong.</h2>
             <div class="docs__grid">
               <article class="docs__card">
                 <h3>Why It Exists</h3>
@@ -1130,6 +1134,20 @@ export class CisspBuddyPanel implements vscode.Disposable {
                 </p>
               </article>
               <article class="docs__card">
+                <h3>User Guide</h3>
+                <p>
+                  Walk through every visible control in the app, including quiz length, detailed
+                  wrong-answer review, LinkedIn drafts, PDF export, and transcript usage.
+                </p>
+              </article>
+              <article class="docs__card">
+                <h3>FAQ</h3>
+                <p>
+                  Fast answers to the questions users, reviewers, and recruiters usually ask about
+                  the architecture, guardrails, scope, and why the app is built this way.
+                </p>
+              </article>
+              <article class="docs__card">
                 <h3>Launch Requirements</h3>
                 <p>
                   VS Code 1.110+, GitHub Copilot Chat access, Node.js, and npm. Build with the commands below, then run the extension host or install the packaged VSIX.
@@ -1138,13 +1156,38 @@ export class CisspBuddyPanel implements vscode.Disposable {
 npm run compile
 F5</div>
               </article>
+              <article class="docs__card">
+                <h3>Troubleshooting</h3>
+                <p>
+                  Use the troubleshooting guide when the app will not open, the model does not respond,
+                  packaging fails, or the installed version looks stale after an update.
+                </p>
+              </article>
+              <article class="docs__card">
+                <h3>Demo Script</h3>
+                <p>
+                  A ready-to-use showcase script for interviews, LinkedIn demos, and portfolio walkthroughs.
+                </p>
+              </article>
             </div>
             <div class="docs__actions" style="margin-top: 16px;">
+              <button class="button--secondary" type="button" data-external-url="${USER_GUIDE_DOC_URL}">
+                User Guide
+              </button>
+              <button class="button--secondary" type="button" data-external-url="${FAQ_DOC_URL}">
+                FAQ
+              </button>
               <button class="button--secondary" type="button" data-external-url="${ARCHITECTURE_DOC_URL}">
                 Architecture Docs
               </button>
               <button class="button--secondary" type="button" data-external-url="${LAUNCH_DOC_URL}">
                 Launch Docs
+              </button>
+              <button class="button--secondary" type="button" data-external-url="${TROUBLESHOOTING_DOC_URL}">
+                Troubleshooting
+              </button>
+              <button class="button--secondary" type="button" data-external-url="${DEMO_SCRIPT_DOC_URL}">
+                Demo Script
               </button>
             </div>
           </section>

@@ -4,45 +4,54 @@
 
 Johnny Avakian Presents CISSP Budyy is designed as both a practical CISSP study tool and a portfolio-quality engineering artifact. The product goals are:
 
-- Deliver a polished in-editor study workflow instead of a basic AI chat transcript
-- Keep the AI experience tightly scoped to CISSP and defensive security concepts
-- Demonstrate thoughtful state management for multi-question quizzes
-- Provide export and content-generation features that help the product stand out in demos and on LinkedIn
+- deliver a polished in-editor study workflow instead of a basic AI chat transcript
+- keep the AI experience tightly scoped to CISSP and defensive security concepts
+- demonstrate thoughtful state management for multi-question quizzes
+- provide export and content-generation features that help the product stand out in demos and on LinkedIn
 
 ## System Design
 
 The extension uses a standard VS Code extension-host architecture:
 
 1. `src/extension.ts`
-   - Activates the extension
-   - Registers commands
-   - Registers the `/cissp-buddy` chat participant as a launcher into the standalone app
+   - activates the extension
+   - registers commands
+   - registers the `/cissp-buddy` chat participant as a launcher into the standalone app
 
 2. `src/panel.ts`
-   - Owns the webview panel lifecycle
-   - Maintains transcript state
-   - Manages the active quiz session
-   - Coordinates quiz turns, PDF export, LinkedIn draft generation, and clipboard actions
-   - Streams model output into the UI
+   - owns the webview panel lifecycle
+   - maintains transcript state
+   - manages the active quiz session
+   - coordinates quiz turns, PDF export, LinkedIn draft generation, and clipboard actions
+   - streams model output into the UI
 
 3. `src/prompts.ts`
-   - Centralizes prompt contracts for:
-     - quiz kickoff
-     - quiz continuation and grading
-     - LinkedIn post generation
-   - Keeps the orchestration logic readable and intentionally structured
+   - centralizes prompt contracts for quiz kickoff, quiz continuation, grading, and LinkedIn post generation
+   - keeps the orchestration logic readable and intentionally structured
 
 4. `src/guardrails.ts`
-   - Applies local relevance and safety checks before the model is called
-   - Allows CISSP topics and quiz answers
-   - Blocks irrelevant prompts and unsafe offensive-security requests
+   - applies local relevance and safety checks before the model is called
+   - allows CISSP topics and quiz answers
+   - blocks irrelevant prompts and unsafe offensive-security requests
 
 5. `src/pdf.ts`
-   - Creates PDF output without adding a heavyweight PDF dependency
-   - Generates a transcript artifact suitable for demos, sharing, and study review
+   - creates PDF output without adding a heavyweight PDF dependency
+   - generates a transcript artifact suitable for demos, sharing, and study review
 
 6. `media/`
-   - Contains brand assets for the extension tile and in-app experience
+   - contains brand assets for the extension tile and in-app experience
+
+## How The Code Maps To The Product
+
+The codebase is deliberately organized by responsibility so the visible product experience is easy to trace:
+
+- command and chat entry points live in `src/extension.ts`
+- the standalone app experience lives in `src/panel.ts`
+- model instructions live in `src/prompts.ts`
+- local safety and relevance logic lives in `src/guardrails.ts`
+- export generation lives in `src/pdf.ts`
+
+This separation keeps the extension easier to explain, easier to review, and easier to extend without mixing UI, prompt design, and safety logic together.
 
 ## Quiz Flow
 
@@ -80,10 +89,10 @@ This is handled as application state, not as a loose UI hint, so each grading tu
 
 The LinkedIn generator is intentionally separate from the quiz transcript flow:
 
-- It uses the current composer topic or the last studied topic
-- It calls the model with a focused content-authoring prompt
-- It stores the output as a separate `LinkedInDraft`
-- It supports copy-to-clipboard without polluting the quiz transcript
+- it uses the current composer topic or the last studied topic
+- it calls the model with a focused content-authoring prompt
+- it stores the output as a separate `LinkedInDraft`
+- it supports copy-to-clipboard without polluting the quiz transcript
 
 This separation helps the app demonstrate product breadth while keeping the study experience clean.
 
@@ -93,7 +102,7 @@ The extension uses two complementary guardrail layers:
 
 1. Local deterministic checks
    - CISSP relevance screening
-   - defensive/offensive misuse filtering
+   - defensive or offensive misuse filtering
    - active-quiz validation for answer-only inputs
 
 2. Prompt-level model instructions
@@ -108,20 +117,30 @@ The local checks prevent obviously wrong or unsafe requests from reaching the mo
 
 The webview is a core product decision, not just a UI choice:
 
-- It lets the extension feel like a standalone app inside VS Code
-- It creates room for product features beyond chat:
+- it lets the extension feel like a standalone app inside VS Code
+- it creates room for product features beyond chat:
   - quiz-length controls
   - LinkedIn draft studio
   - documentation cards
   - branded calls to action
-- It improves the project’s value as a portfolio showcase
+- it improves the project's value as a portfolio showcase
 
 ## Engineering Tradeoffs
 
-- The extension host is TypeScript because that is the native integration model for VS Code chat participants and webviews
-- The PDF generator is lightweight and dependency-free to reduce package weight and review complexity
-- Quiz-state orchestration is kept in the extension rather than trusting the model alone, which improves consistency for multi-question sessions
-- Documentation is duplicated in both the app and GitHub because the project serves both end users and portfolio reviewers
+- the extension host is TypeScript because that is the native integration model for VS Code chat participants and webviews
+- the PDF generator is lightweight and dependency-free to reduce package weight and review complexity
+- quiz-state orchestration is kept in the extension rather than trusting the model alone, which improves consistency for multi-question sessions
+- documentation is duplicated in both the app and GitHub because the project serves both end users and portfolio reviewers
+
+## Documentation As Part Of The Architecture
+
+Documentation is treated as a product feature, not a project afterthought:
+
+- the app contains summary-level documentation for live demos
+- GitHub contains deeper references for users, reviewers, and maintainers
+- the docs are cross-linked so setup, architecture, troubleshooting, and showcase flows can be followed without guesswork
+
+That decision matters because this project is meant to function as both a usable study assistant and a professional portfolio artifact.
 
 ## Key Files
 

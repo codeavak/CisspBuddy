@@ -29,7 +29,7 @@ The standalone app design creates room for product features that do not fit well
 - PDF export
 - LinkedIn draft generation
 - in-app documentation
-- branding, website links, and community calls to action
+- branding, website links, support links, and community calls to action
 
 ## Why Is The Study Composer Floating?
 

@@ -43,6 +43,7 @@ type WebviewMessage =
 
 const BRAND_NAME = 'Johnny Avakian\'s CISSP Buddy';
 const WEBSITE_URL = 'https://codeavak.github.io/portfolio_website/';
+const BUY_ME_A_COFFEE_URL = 'https://buymeacoffee.com/codeavak';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/codeavak';
 const REPO_URL = 'https://github.com/codeavak/cisspbuddy';
 const ARCHITECTURE_DOC_URL = `${REPO_URL}/blob/master/docs/ARCHITECTURE.md`;
@@ -1295,19 +1296,23 @@ export class CisspBuddyPanel implements vscode.Disposable {
       <div class="stack">
         <section class="promo">
           <div>
-            <p class="section__eyebrow">Website, Mission, And Referrals</p>
+            <p class="section__eyebrow">Website, Support, Mission, And Referrals</p>
             <h2 class="section__title">
               Built as a gift to CISSP candidates who want to study smarter and succeed.
             </h2>
             <p class="section__body">
               Johnny is working on posting a CISSP prep blog on the website. Stars on the
-              CISSP Buddy repo and comments on the blog are deeply appreciated, and referrals
-              for cybersecurity or senior engineer roles are always welcome.
+              CISSP Buddy repo, comments on the blog, and support through Buy Me a Coffee are
+              deeply appreciated, and referrals for cybersecurity or senior engineer roles are
+              always welcome.
             </p>
           </div>
           <div class="promo__actions">
             <button class="button--secondary" type="button" data-external-url="${WEBSITE_URL}">
               Website
+            </button>
+            <button class="button--secondary" type="button" data-external-url="${BUY_ME_A_COFFEE_URL}">
+              Support CISSP Buddy
             </button>
             <button class="button--secondary" type="button" data-external-url="${LINKEDIN_URL}">
               LinkedIn

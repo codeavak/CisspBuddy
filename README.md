@@ -27,7 +27,7 @@ Johnny Avakian's CISSP Buddy is a mission-driven Visual Studio Code study compan
 - LinkedIn post generator based on the last studied topic, with composer fallback before a session starts
 - PDF export for study review, mentoring, and saved notes
 - In-app documentation with direct links to GitHub docs
-- Website, LinkedIn, repo-star, and referral links
+- Website, support, LinkedIn, repo-star, and referral links
 - Guardrails that keep the assistant focused on CISSP and defensive security guidance
 
 ## Foolproof Quick Start
@@ -74,7 +74,7 @@ npx @vscode/vsce package --no-yarn
 Install the packaged extension:
 
 ```bash
-code --install-extension cissp-buddy-0.0.17.vsix --force
+code --install-extension cissp-buddy-0.0.18.vsix --force
 ```
 
 If VS Code still shows the previous version after install, run `Developer: Reload Window`.
@@ -112,7 +112,8 @@ The documentation is intentionally split so each audience can find what they nee
 ## Website And Community Links
 
 - Website: [codeavak.github.io/portfolio_website](https://codeavak.github.io/portfolio_website/)
+- Support: [Buy Me a Coffee](https://buymeacoffee.com/codeavak)
 - LinkedIn: [codeavak](https://www.linkedin.com/in/codeavak)
 - Repo: [codeavak/cisspbuddy](https://github.com/codeavak/cisspbuddy)
 
-Johnny is working on posting a CISSP prep blog on the website. Stars on the repo and comments on the blog are appreciated, and referrals for cybersecurity or senior engineer roles are especially welcome.
+Johnny is working on posting a CISSP prep blog on the website. Stars on the repo, comments on the blog, and support through Buy Me a Coffee are appreciated, and referrals for cybersecurity or senior engineer roles are especially welcome.

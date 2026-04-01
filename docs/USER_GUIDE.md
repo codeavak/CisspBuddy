@@ -29,11 +29,12 @@ The app opens as its own editor tab inside VS Code.
 
 This is the branded app header. It explains the purpose of the product and shows starter prompts.
 
-### Website And Referral Section
+### Website, Support, And Referral Section
 
 This section contains buttons for:
 
 - Website
+- Support CISSP Buddy
 - LinkedIn
 - Star The Repo
 

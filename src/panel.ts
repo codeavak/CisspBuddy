@@ -23,6 +23,7 @@ import { LinkedInDraft, QuizSession, TranscriptEntry } from './types';
 
 type WebviewMessage =
   | { type: 'ready' }
+  | { type: 'acceptTerms' }
   | {
       type: 'submitPrompt';
       text: string;
@@ -55,11 +56,28 @@ const USER_GUIDE_DOC_URL = `${REPO_URL}/blob/master/docs/USER_GUIDE.md`;
 const FAQ_DOC_URL = `${REPO_URL}/blob/master/docs/FAQ.md`;
 const TROUBLESHOOTING_DOC_URL = `${REPO_URL}/blob/master/docs/TROUBLESHOOTING.md`;
 const DEMO_SCRIPT_DOC_URL = `${REPO_URL}/blob/master/docs/DEMO_SCRIPT.md`;
+const TERMS_ACCEPTED_KEY = 'cisspBuddy.termsAccepted';
+const TERMS_ACCEPTED_AT_KEY = 'cisspBuddy.termsAcceptedAt';
+const LEGAL_DISCLAIMER_LINES = [
+  'Use of CISSP Buddy is completely at your own discretion.',
+  'Johnny Avakian, CISSP Buddy, and all related contributors assume no liability for any misinformation, omissions, inaccuracies, outcomes, or decisions that arise from use of this software.',
+  'For best results, use CISSP Buddy as a review companion and confirm knowledge through multiple CISSP study sources, official references, and your own judgment.',
+  'By accepting, you acknowledge that this tool may be incomplete or mistaken and that you remain solely responsible for how you use any information it provides.'
+];
+
+interface PendingPrompt {
+  prompt: string;
+  questionCount: number;
+  detailedWrongAnswers: boolean;
+}
 
 export class CisspBuddyPanel implements vscode.Disposable {
   private static currentPanel: CisspBuddyPanel | undefined;
 
-  public static createOrShow(extensionUri: vscode.Uri): CisspBuddyPanel {
+  public static createOrShow(
+    extensionUri: vscode.Uri,
+    globalState: vscode.Memento
+  ): CisspBuddyPanel {
     if (CisspBuddyPanel.currentPanel) {
       CisspBuddyPanel.currentPanel.panel.reveal(vscode.ViewColumn.Beside);
       return CisspBuddyPanel.currentPanel;
@@ -75,7 +93,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       }
     );
 
-    CisspBuddyPanel.currentPanel = new CisspBuddyPanel(panel, extensionUri);
+    CisspBuddyPanel.currentPanel = new CisspBuddyPanel(panel, extensionUri, globalState);
     return CisspBuddyPanel.currentPanel;
   }
 
@@ -83,9 +101,14 @@ export class CisspBuddyPanel implements vscode.Disposable {
     return CisspBuddyPanel.currentPanel;
   }
 
+  public needsTermsAcceptance(): boolean {
+    return !this.termsAccepted;
+  }
+
   private readonly panel: vscode.WebviewPanel;
   private readonly disposables: vscode.Disposable[] = [];
   private readonly extensionUri: vscode.Uri;
+  private readonly globalState: vscode.Memento;
   private transcript: TranscriptEntry[] = [];
   private activeQuiz: QuizSession | undefined;
   private linkedinDraft: LinkedInDraft | undefined;
@@ -95,10 +118,20 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private isBusy = false;
   private busyLabel = '';
   private requestCancellation: vscode.CancellationTokenSource | undefined;
+  private termsAccepted: boolean;
+  private termsAcceptedAt: string | undefined;
+  private pendingPrompt: PendingPrompt | undefined;
 
-  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+  private constructor(
+    panel: vscode.WebviewPanel,
+    extensionUri: vscode.Uri,
+    globalState: vscode.Memento
+  ) {
     this.panel = panel;
     this.extensionUri = extensionUri;
+    this.globalState = globalState;
+    this.termsAccepted = Boolean(this.globalState.get<boolean>(TERMS_ACCEPTED_KEY, false));
+    this.termsAcceptedAt = this.globalState.get<string | undefined>(TERMS_ACCEPTED_AT_KEY);
     this.panel.iconPath = vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-icon.png');
     this.panel.webview.html = this.getHtml(this.panel.webview);
 
@@ -133,6 +166,19 @@ export class CisspBuddyPanel implements vscode.Disposable {
     this.panel.reveal(vscode.ViewColumn.Beside);
     this.selectedQuestionCount = clampQuestionCount(questionCount);
     this.selectedDetailedWrongAnswers = detailedWrongAnswers;
+
+    if (!this.termsAccepted) {
+      this.pendingPrompt = {
+        prompt: trimmedPrompt,
+        questionCount: this.selectedQuestionCount,
+        detailedWrongAnswers: this.selectedDetailedWrongAnswers
+      };
+      this.postState();
+      await vscode.window.showInformationMessage(
+        `Review and accept the ${BRAND_NAME} terms before starting your first study session.`
+      );
+      return;
+    }
 
     if (isChoiceAnswer(trimmedPrompt)) {
       await this.handleQuizAnswer(trimmedPrompt);
@@ -181,9 +227,17 @@ export class CisspBuddyPanel implements vscode.Disposable {
   }
 
   private async handleWebviewMessage(message: WebviewMessage): Promise<void> {
+    if (!this.termsAccepted && message.type !== 'ready' && message.type !== 'acceptTerms' && message.type !== 'openExternal') {
+      this.postState();
+      return;
+    }
+
     switch (message.type) {
       case 'ready':
         this.postState();
+        return;
+      case 'acceptTerms':
+        await this.acceptTerms();
         return;
       case 'submitPrompt':
       case 'quickPrompt':
@@ -459,6 +513,37 @@ export class CisspBuddyPanel implements vscode.Disposable {
     this.postState();
   }
 
+  private async acceptTerms(): Promise<void> {
+    if (this.termsAccepted) {
+      this.postState();
+      return;
+    }
+
+    const acceptedAtIso = new Date().toISOString();
+    this.termsAccepted = true;
+    this.termsAcceptedAt = new Date(acceptedAtIso).toLocaleString();
+
+    await this.globalState.update(TERMS_ACCEPTED_KEY, true);
+    await this.globalState.update(TERMS_ACCEPTED_AT_KEY, acceptedAtIso);
+    this.postState();
+
+    const pendingPrompt = this.pendingPrompt;
+    this.pendingPrompt = undefined;
+
+    if (pendingPrompt) {
+      await this.ask(
+        pendingPrompt.prompt,
+        pendingPrompt.questionCount,
+        pendingPrompt.detailedWrongAnswers
+      );
+      return;
+    }
+
+    await vscode.window.showInformationMessage(
+      `The ${BRAND_NAME} terms have been accepted. You can begin studying now.`
+    );
+  }
+
   private resolveLinkedInTopic(topicCandidate?: string): string | undefined {
     if (this.activeQuiz?.topic) {
       return this.activeQuiz.topic;
@@ -707,10 +792,14 @@ export class CisspBuddyPanel implements vscode.Disposable {
         activeQuiz: this.activeQuiz,
         busyLabel: this.busyLabel,
         isBusy: this.isBusy,
+        legalDisclaimerLines: LEGAL_DISCLAIMER_LINES,
         linkedinDraft: this.linkedinDraft,
+        pendingPromptTopic: this.pendingPrompt?.prompt,
         quickPrompts: QUICK_PROMPTS,
         selectedDetailedWrongAnswers: this.selectedDetailedWrongAnswers,
         selectedQuestionCount: this.selectedQuestionCount,
+        termsAccepted: this.termsAccepted,
+        termsAcceptedAt: formatAcceptedAt(this.termsAcceptedAt),
         transcript: this.transcript
       }
     });
@@ -777,6 +866,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       }
 
       .hero,
+      .legal,
       .promo,
       .creator,
       .docs,
@@ -788,6 +878,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       }
 
       .hero,
+      .legal,
       .promo,
       .creator,
       .docs,
@@ -859,6 +950,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       }
 
       .quick-prompts,
+      .legal__actions,
       .promo__actions,
       .creator__actions,
       .docs__actions,
@@ -874,6 +966,112 @@ export class CisspBuddyPanel implements vscode.Disposable {
         display: grid;
         gap: 18px;
         margin-top: 18px;
+      }
+
+      .legal {
+        padding: 22px 24px;
+        background:
+          linear-gradient(135deg, rgba(216, 177, 92, 0.1), transparent 45%),
+          linear-gradient(180deg, rgba(20, 27, 41, 0.94), rgba(11, 18, 29, 0.96));
+      }
+
+      .legal__header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .legal__list {
+        margin: 14px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .legal__meta {
+        margin-top: 12px;
+        color: var(--gold);
+        font-size: 13px;
+      }
+
+      .legal__status {
+        padding: 9px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(216, 177, 92, 0.24);
+        background: rgba(216, 177, 92, 0.08);
+        color: var(--gold);
+        white-space: nowrap;
+        font-size: 12px;
+      }
+
+      .terms-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: rgba(3, 8, 14, 0.78);
+        backdrop-filter: blur(8px);
+      }
+
+      .terms-modal[hidden] {
+        display: none;
+      }
+
+      .terms-modal__card {
+        width: min(760px, 100%);
+        border-radius: 28px;
+        border: 1px solid rgba(216, 177, 92, 0.28);
+        background:
+          linear-gradient(145deg, rgba(22, 35, 52, 0.98), rgba(11, 20, 31, 0.98));
+        box-shadow: 0 28px 60px rgba(0, 0, 0, 0.4);
+        padding: 26px 28px;
+      }
+
+      .terms-modal__title {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(28px, 5vw, 36px);
+        line-height: 1.1;
+      }
+
+      .terms-modal__body {
+        margin: 14px 0 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .terms-modal__list {
+        margin: 16px 0;
+        padding-left: 20px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .terms-modal__checkbox {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-top: 16px;
+        color: var(--ink);
+        line-height: 1.6;
+      }
+
+      .terms-modal__checkbox input {
+        margin-top: 4px;
+        width: 18px;
+        height: 18px;
+        accent-color: var(--gold-dark);
+      }
+
+      .terms-modal__hint {
+        margin-top: 12px;
+        color: var(--gold);
+        font-size: 13px;
+        line-height: 1.6;
       }
 
       .two-up {
@@ -1322,6 +1520,20 @@ export class CisspBuddyPanel implements vscode.Disposable {
       </section>
 
       <div class="stack">
+        <section class="legal">
+          <div class="legal__header">
+            <div>
+              <p class="section__eyebrow">Legal Notice</p>
+              <h2 class="section__title">Use this study tool as a review companion, not as your only source of truth.</h2>
+            </div>
+            <div id="legalStatus" class="legal__status">Acceptance Required</div>
+          </div>
+          <ul id="legalSummary" class="legal__list"></ul>
+          <div id="legalMeta" class="legal__meta">
+            Acceptance is required before your first study session.
+          </div>
+        </section>
+
         <section class="promo">
           <div>
             <p class="section__eyebrow">Website, Support, Mission, And Referrals</p>
@@ -1507,6 +1719,33 @@ F5</div>
       </div>
     </div>
 
+    <div id="termsModal" class="terms-modal" hidden>
+      <section class="terms-modal__card">
+        <p class="section__eyebrow">Required Before First Use</p>
+        <h2 class="terms-modal__title">Accept the CISSP Buddy terms before using the software.</h2>
+        <p class="terms-modal__body">
+          CISSP Buddy is intended to help you review concepts more effectively, but use of the
+          software remains completely at your own discretion. Read the notice below carefully and
+          accept it before starting your first study session.
+        </p>
+        <ul id="termsModalList" class="terms-modal__list"></ul>
+        <label class="terms-modal__checkbox">
+          <input id="termsCheckbox" type="checkbox" />
+          <span>
+            I understand that CISSP Buddy is a review aid only, that I should confirm knowledge
+            with multiple CISSP study sources, and that I accept full responsibility for how I use
+            any information produced by this software.
+          </span>
+        </label>
+        <div id="termsHint" class="terms-modal__hint"></div>
+        <div class="legal__actions" style="margin-top: 18px;">
+          <button id="acceptTermsButton" class="button--primary" type="button" disabled>
+            Accept Terms And Continue
+          </button>
+        </div>
+      </section>
+    </div>
+
     <script nonce="${nonce}">
       const BRAND_NAME_TEXT = ${JSON.stringify(BRAND_NAME)};
       const APP_LOGO_DATA_URL = ${JSON.stringify(appLogoDataUrl)};
@@ -1528,16 +1767,24 @@ F5</div>
             ? persistedViewState.composerCollapsed
             : shouldCollapseComposerByDefault(),
         isBusy: false,
+        legalDisclaimerLines: [],
         linkedinDraft: null,
+        pendingPromptTopic: '',
         quickPrompts: [],
         selectedDetailedWrongAnswers: false,
         selectedQuestionCount: MIN_QUIZ_QUESTIONS,
+        termsAccepted: false,
+        termsAcceptedAt: '',
         transcript: []
       };
 
       const composerElement = document.getElementById('composer');
       const composerToggleButton = document.getElementById('composerToggleButton');
+      const acceptTermsButton = document.getElementById('acceptTermsButton');
       const quickPromptsElement = document.getElementById('quickPrompts');
+      const legalMetaElement = document.getElementById('legalMeta');
+      const legalStatusElement = document.getElementById('legalStatus');
+      const legalSummaryElement = document.getElementById('legalSummary');
       const transcriptElement = document.getElementById('transcript');
       const statusTextElement = document.getElementById('statusText');
       const quizSummaryElement = document.getElementById('quizSummary');
@@ -1551,6 +1798,10 @@ F5</div>
       const generateLinkedInToolbarButton = document.getElementById('generateLinkedInToolbarButton');
       const generateLinkedInButton = document.getElementById('generateLinkedInButton');
       const linkedinMetaElement = document.getElementById('linkedinMeta');
+      const termsCheckbox = document.getElementById('termsCheckbox');
+      const termsHintElement = document.getElementById('termsHint');
+      const termsModalElement = document.getElementById('termsModal');
+      const termsModalListElement = document.getElementById('termsModalList');
 
       for (let count = MIN_QUIZ_QUESTIONS; count <= MAX_QUIZ_QUESTIONS; count += 1) {
         const option = document.createElement('option');
@@ -1846,11 +2097,67 @@ F5</div>
             (prompt) =>
               '<button class="button--prompt" type="button" data-quick-prompt="' +
               escapeHtml(prompt) +
+              '"' +
+              (state.termsAccepted ? '' : ' disabled') +
+              ' title="' +
+              escapeHtml(
+                state.termsAccepted
+                  ? 'Launch this prompt'
+                  : 'Accept the CISSP Buddy terms before using quick prompts.'
+              ) +
               '">' +
               escapeHtml(prompt) +
               '</button>'
           )
           .join('');
+      }
+
+      function renderLegalNotice() {
+        legalSummaryElement.innerHTML = state.legalDisclaimerLines
+          .map((line) => '<li>' + escapeHtml(line) + '</li>')
+          .join('');
+
+        legalStatusElement.textContent = state.termsAccepted
+          ? 'Terms Accepted'
+          : 'Acceptance Required';
+
+        if (state.termsAccepted) {
+          legalMetaElement.textContent = state.termsAcceptedAt
+            ? 'Accepted on ' + state.termsAcceptedAt + '. Continue confirming important concepts with multiple CISSP study sources.'
+            : 'Terms accepted. Continue confirming important concepts with multiple CISSP study sources.';
+          return;
+        }
+
+        if (state.pendingPromptTopic) {
+          legalMetaElement.textContent =
+            'Acceptance is required before first use. Your pending topic "' +
+            state.pendingPromptTopic +
+            '" will start automatically after acceptance.';
+          return;
+        }
+
+        legalMetaElement.textContent =
+          'Acceptance is required before your first study session. Use this tool only at your own discretion and confirm important topics with multiple CISSP study sources.';
+      }
+
+      function renderTermsGate() {
+        const requiresAcceptance = !state.termsAccepted;
+        termsModalElement.hidden = !requiresAcceptance;
+
+        if (requiresAcceptance) {
+          termsModalListElement.innerHTML = state.legalDisclaimerLines
+            .map((line) => '<li>' + escapeHtml(line) + '</li>')
+            .join('');
+          acceptTermsButton.disabled = !termsCheckbox.checked;
+          termsHintElement.textContent = state.pendingPromptTopic
+            ? 'A study topic is queued and will begin after you accept the terms.'
+            : 'Accept once to unlock the study workflow on this device.';
+          return;
+        }
+
+        termsHintElement.textContent = '';
+        termsCheckbox.checked = false;
+        acceptTermsButton.disabled = true;
       }
 
       function renderTranscript() {
@@ -1997,19 +2304,22 @@ F5</div>
       function renderControls() {
         const trimmedInput = promptInput.value.trim();
         const quizAwaitingAnswer = Boolean(state.activeQuiz && state.activeQuiz.awaitingAnswer);
+        const controlsLocked = state.isBusy || !state.termsAccepted;
         statusTextElement.textContent = state.isBusy
           ? state.busyLabel || 'Preparing your next study step...'
-          : 'Ask a CISSP topic or answer with A, B, C, or D.';
+          : state.termsAccepted
+            ? 'Ask a CISSP topic or answer with A, B, C, or D.'
+            : 'Accept the CISSP Buddy terms to unlock the study workflow.';
         questionCountSelect.value = String(state.selectedQuestionCount || MIN_QUIZ_QUESTIONS);
         detailedWrongAnswersInput.checked = Boolean(state.selectedDetailedWrongAnswers);
-        promptInput.disabled = state.isBusy;
-        questionCountSelect.disabled = state.isBusy;
-        detailedWrongAnswersInput.disabled = state.isBusy;
-        sendButton.disabled = state.isBusy || trimmedInput.length === 0;
-        exportButton.disabled = state.transcript.length === 0;
-        resetButton.disabled = state.transcript.length === 0 || state.isBusy;
-        generateLinkedInToolbarButton.disabled = state.isBusy;
-        generateLinkedInButton.disabled = state.isBusy;
+        promptInput.disabled = controlsLocked;
+        questionCountSelect.disabled = controlsLocked;
+        detailedWrongAnswersInput.disabled = controlsLocked;
+        sendButton.disabled = controlsLocked || trimmedInput.length === 0;
+        exportButton.disabled = state.transcript.length === 0 || !state.termsAccepted;
+        resetButton.disabled = state.transcript.length === 0 || controlsLocked;
+        generateLinkedInToolbarButton.disabled = controlsLocked;
+        generateLinkedInButton.disabled = controlsLocked;
 
         generateLinkedInToolbarButton.textContent = quizAwaitingAnswer
           ? 'Answer Quiz First'
@@ -2020,6 +2330,8 @@ F5</div>
 
         const linkedInHint = quizAwaitingAnswer
           ? 'Quiz in progress. Type your answer with A, B, C, or D before generating a LinkedIn post.'
+          : !state.termsAccepted
+            ? 'Accept the CISSP Buddy terms before generating LinkedIn content.'
           : 'Generate a LinkedIn draft and a topic-specific visual from the last studied topic or the current composer topic.';
 
         generateLinkedInToolbarButton.title = linkedInHint;
@@ -2038,11 +2350,13 @@ F5</div>
 
       function render() {
         renderQuickPrompts();
+        renderLegalNotice();
         renderTranscript();
         renderLinkedInDraft();
         renderQuizSummary();
         renderControls();
         renderComposer();
+        renderTermsGate();
       }
 
       promptForm.addEventListener('submit', (event) => {
@@ -2064,6 +2378,18 @@ F5</div>
 
       promptInput.addEventListener('input', () => {
         renderControls();
+      });
+
+      termsCheckbox.addEventListener('change', () => {
+        acceptTermsButton.disabled = !termsCheckbox.checked;
+      });
+
+      acceptTermsButton.addEventListener('click', () => {
+        if (!termsCheckbox.checked) {
+          return;
+        }
+
+        vscode.postMessage({ type: 'acceptTerms' });
       });
 
       composerToggleButton.addEventListener('click', () => {
@@ -2176,10 +2502,14 @@ F5</div>
         state.activeQuiz = event.data.payload.activeQuiz;
         state.busyLabel = event.data.payload.busyLabel;
         state.isBusy = event.data.payload.isBusy;
+        state.legalDisclaimerLines = event.data.payload.legalDisclaimerLines;
         state.linkedinDraft = event.data.payload.linkedinDraft;
+        state.pendingPromptTopic = event.data.payload.pendingPromptTopic;
         state.quickPrompts = event.data.payload.quickPrompts;
         state.selectedDetailedWrongAnswers = event.data.payload.selectedDetailedWrongAnswers;
         state.selectedQuestionCount = event.data.payload.selectedQuestionCount;
+        state.termsAccepted = event.data.payload.termsAccepted;
+        state.termsAcceptedAt = event.data.payload.termsAcceptedAt;
         state.transcript = event.data.payload.transcript;
         render();
       });
@@ -2243,6 +2573,19 @@ function decodePngDataUrl(dataUrl: string): Uint8Array | undefined {
   }
 
   return Uint8Array.from(Buffer.from(match[1], 'base64'));
+}
+
+function formatAcceptedAt(value: string | undefined): string {
+  if (!value) {
+    return '';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return parsed.toLocaleString();
 }
 
 function getNonce(): string {

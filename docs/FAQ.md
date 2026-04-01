@@ -32,6 +32,15 @@ The standalone app design creates room for product features that do not fit well
 - in-app documentation
 - branding, website links, support links, and community calls to action
 
+## Why Does The App Require Terms Acceptance Before First Use?
+
+The app now presents a first-use legal notice and requires acceptance before the workflow unlocks. This makes the scope and responsibility model explicit:
+
+- the tool is used at the user's own discretion
+- no liability is assumed for misinformation, omissions, inaccuracies, or resulting decisions
+- the app is intended as a review aid, not a sole study authority
+- users should confirm important concepts with multiple CISSP study sources
+
 ## Why Is The Study Composer Floating?
 
 The composer is a floating dock so it stays easy to reach without permanently covering the transcript. It can be collapsed when the user wants maximum reading space, which is especially helpful on lower-resolution or shorter screens.

@@ -23,6 +23,7 @@ The extension uses a standard VS Code extension-host architecture:
    - maintains transcript state
    - manages the active quiz session
    - coordinates quiz turns, PDF export, LinkedIn draft generation, AI-designed visual generation, and transcript download actions
+   - enforces the first-use legal acceptance gate before study actions begin
    - streams model output into the UI
 
 3. `src/prompts.ts`

@@ -22,6 +22,7 @@ Johnny Avakian's CISSP Buddy is a mission-driven Visual Studio Code study compan
 - Quiz-aware LinkedIn controls that tell the user to answer the current question before drafting a post
 - Transcript-based LinkedIn draft cards that show the generated post alongside an AI-designed topic graphic
 - Download actions for both the generated LinkedIn post and the generated LinkedIn image
+- First-use legal notice with required acceptance before the study workflow unlocks
 - Optional detailed explanations for all three wrong answer choices
 - Interactive answer review with follow-up questions until the selected quiz count is complete
 - LinkedIn post generator based on the last studied topic, with composer fallback before a session starts
@@ -74,7 +75,7 @@ npx @vscode/vsce package --no-yarn
 Install the packaged extension:
 
 ```bash
-code --install-extension cissp-buddy-0.0.19.vsix --force
+code --install-extension cissp-buddy-0.0.20.vsix --force
 ```
 
 If VS Code still shows the previous version after install, run `Developer: Reload Window`.
@@ -108,6 +109,10 @@ The documentation is intentionally split so each audience can find what they nee
 - Maintainers and collaborators should read the README, Architecture Overview, and Launching guide
 - The Demo Script is there for interviews, product walkthroughs, and LinkedIn posts
 - In-app documentation mirrors this structure so the product remains clear during real study sessions and demos
+
+## Legal Notice
+
+Use of CISSP Buddy is completely at the user's own discretion. Johnny Avakian, CISSP Buddy, and related contributors assume no liability for misinformation, omissions, inaccuracies, outcomes, or decisions that arise from use of this software. For best results, use it as a review companion and confirm knowledge through multiple CISSP study sources, official references, and your own judgment. The app now presents this notice on first use and requires explicit acceptance before the study workflow is enabled.
 
 ## Website And Community Links
 

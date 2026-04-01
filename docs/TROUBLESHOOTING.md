@@ -31,7 +31,7 @@ If something is not working, check these first:
 ### Reinstall Command
 
 ```bash
-code --install-extension cissp-buddy-0.0.19.vsix --force
+code --install-extension cissp-buddy-0.0.20.vsix --force
 ```
 
 ## The App Opens But Responses Never Arrive
@@ -96,6 +96,20 @@ VS Code can briefly lag before the extension list reflects the latest installed 
   - a previously studied quiz topic
 - make sure the topic is CISSP-related
 - make sure Copilot model access is working
+
+## The App Looks Locked On First Launch
+
+### Why This Happens
+
+The app now requires a first-use legal acceptance before the study workflow unlocks.
+
+### What To Do
+
+- read the notice
+- check the acceptance box
+- click `Accept Terms And Continue`
+
+If a topic was launched from `/cissp-buddy`, it will start automatically after acceptance.
 
 ## PDF Export Does Not Produce A File
 

@@ -23,6 +23,17 @@ You can open the app in either of these ways:
 
 The app opens as its own editor tab inside VS Code.
 
+## Required First-Use Notice
+
+Before your first study session, the app presents a required legal notice and blocks the workflow until you accept it.
+
+The notice makes four points clear:
+
+- use of CISSP Buddy is completely at your own discretion
+- Johnny Avakian, CISSP Buddy, and related contributors assume no liability for misinformation or outcomes tied to use of the software
+- the tool should be used as a review aid, not as your only CISSP source
+- best results come from confirming knowledge through multiple CISSP study sources and your own judgment
+
 ## Main Areas Of The App
 
 ### Hero Section
@@ -65,6 +76,10 @@ When a draft is generated, the answer area shows:
 ### In-App Documentation
 
 This section links directly to the longer GitHub documentation.
+
+### Legal Notice
+
+This section stays visible in the app after acceptance so the disclaimer remains easy to review later.
 
 ### Transcript Area
 

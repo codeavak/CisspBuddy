@@ -10,7 +10,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.commands.registerCommand('cisspBuddy.openApp', async () => {
-      CisspBuddyPanel.createOrShow(context.extensionUri);
+      CisspBuddyPanel.createOrShow(context.extensionUri, context.globalState);
     }),
     vscode.commands.registerCommand('cisspBuddy.exportTranscriptPdf', async () => {
       const panel = CisspBuddyPanel.current();
@@ -31,22 +31,27 @@ export function activate(context: vscode.ExtensionContext): void {
     stream,
     _token
   ) => {
-    const panel = CisspBuddyPanel.createOrShow(context.extensionUri);
+    const panel = CisspBuddyPanel.createOrShow(context.extensionUri, context.globalState);
     const launchPrompt = buildLaunchPrompt(
       request.prompt,
       request.command === 'cissp-buddy'
     );
+    const requiresTermsAcceptance = panel.needsTermsAcceptance();
 
     if (launchPrompt) {
       void panel.ask(launchPrompt);
       stream.markdown(
-        'Opened Johnny Avakian\'s CISSP Buddy in a standalone editor tab and sent your topic there.'
+        requiresTermsAcceptance
+          ? 'Opened Johnny Avakian\'s CISSP Buddy in a standalone editor tab. Review and accept the required terms there, and your queued topic will start afterward.'
+          : 'Opened Johnny Avakian\'s CISSP Buddy in a standalone editor tab and sent your topic there.'
       );
       return;
     }
 
     stream.markdown(
-      'Opened Johnny Avakian\'s CISSP Buddy in a standalone editor tab. Continue there.'
+      requiresTermsAcceptance
+        ? 'Opened Johnny Avakian\'s CISSP Buddy in a standalone editor tab. Review and accept the required terms there before first use.'
+        : 'Opened Johnny Avakian\'s CISSP Buddy in a standalone editor tab. Continue there.'
     );
   };
 

@@ -54,6 +54,7 @@ The quiz experience is not delegated entirely to the model. The extension mainta
    - explain the concept
    - ask question `1 of N`
    - stop before revealing the answer
+   - honor the selected wrong-answer review depth
 4. When the user replies with `A`, `B`, `C`, or `D`, the extension:
    - validates that a question is actually waiting for an answer
    - sends the full session context plus a grading instruction
@@ -65,6 +66,15 @@ The quiz experience is not delegated entirely to the model. The extension mainta
    - no extra follow-up question
 
 This structure makes the app feel guided and intentional instead of probabilistic and chatty.
+
+## Review-Depth Configuration
+
+The app includes a user-facing configuration for distractor review depth:
+
+- default mode gives a concise explanation of why the remaining options are weaker
+- detailed mode explains each of the three wrong options individually
+
+This is handled as application state, not as a loose UI hint, so each grading turn receives explicit prompt instructions about how deeply to explain the distractors.
 
 ## LinkedIn Post Generator
 

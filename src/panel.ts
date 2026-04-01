@@ -15,9 +15,20 @@ import { LinkedInDraft, QuizSession, TranscriptEntry } from './types';
 
 type WebviewMessage =
   | { type: 'ready' }
-  | { type: 'submitPrompt'; text: string; questionCount: number }
-  | { type: 'quickPrompt'; text: string; questionCount: number }
+  | {
+      type: 'submitPrompt';
+      text: string;
+      questionCount: number;
+      detailedWrongAnswers: boolean;
+    }
+  | {
+      type: 'quickPrompt';
+      text: string;
+      questionCount: number;
+      detailedWrongAnswers: boolean;
+    }
   | { type: 'setQuestionCount'; questionCount: number }
+  | { type: 'setDetailedWrongAnswers'; enabled: boolean }
   | { type: 'generateLinkedInPost'; topic?: string }
   | { type: 'copyText'; text: string }
   | { type: 'exportPdf' }
@@ -65,6 +76,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private activeQuiz: QuizSession | undefined;
   private linkedinDraft: LinkedInDraft | undefined;
   private selectedQuestionCount = MIN_QUIZ_QUESTIONS;
+  private selectedDetailedWrongAnswers = false;
   private lastStudyTopic: string | undefined;
   private isBusy = false;
   private busyLabel = '';
@@ -87,7 +99,11 @@ export class CisspBuddyPanel implements vscode.Disposable {
     );
   }
 
-  public async ask(prompt: string, questionCount = this.selectedQuestionCount): Promise<void> {
+  public async ask(
+    prompt: string,
+    questionCount = this.selectedQuestionCount,
+    detailedWrongAnswers = this.selectedDetailedWrongAnswers
+  ): Promise<void> {
     const trimmedPrompt = prompt.trim();
     if (trimmedPrompt.length === 0) {
       return;
@@ -102,6 +118,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
     this.panel.reveal(vscode.ViewColumn.Beside);
     this.selectedQuestionCount = clampQuestionCount(questionCount);
+    this.selectedDetailedWrongAnswers = detailedWrongAnswers;
 
     if (isChoiceAnswer(trimmedPrompt)) {
       await this.handleQuizAnswer(trimmedPrompt);
@@ -156,10 +173,20 @@ export class CisspBuddyPanel implements vscode.Disposable {
         return;
       case 'submitPrompt':
       case 'quickPrompt':
-        await this.ask(message.text, message.questionCount);
+        await this.ask(message.text, message.questionCount, message.detailedWrongAnswers);
         return;
       case 'setQuestionCount':
         this.selectedQuestionCount = clampQuestionCount(message.questionCount);
+        this.postState();
+        return;
+      case 'setDetailedWrongAnswers':
+        this.selectedDetailedWrongAnswers = message.enabled;
+        if (this.activeQuiz && !this.activeQuiz.completed) {
+          this.activeQuiz = {
+            ...this.activeQuiz,
+            explainWrongAnswersInDetail: message.enabled
+          };
+        }
         this.postState();
         return;
       case 'generateLinkedInPost':
@@ -201,6 +228,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       totalQuestions: this.selectedQuestionCount,
       currentQuestion: 1,
       sessionStartIndex,
+      explainWrongAnswersInDetail: this.selectedDetailedWrongAnswers,
       awaitingAnswer: true,
       completed: false
     };
@@ -212,7 +240,11 @@ export class CisspBuddyPanel implements vscode.Disposable {
     const messages = [
       vscode.LanguageModelChatMessage.User(BASE_PROMPT),
       vscode.LanguageModelChatMessage.User(
-        buildQuizStartPrompt(topic, pendingQuiz.totalQuestions)
+        buildQuizStartPrompt(
+          topic,
+          pendingQuiz.totalQuestions,
+          pendingQuiz.explainWrongAnswersInDetail
+        )
       )
     ];
 
@@ -254,7 +286,13 @@ export class CisspBuddyPanel implements vscode.Disposable {
     const messages = [
       vscode.LanguageModelChatMessage.User(BASE_PROMPT),
       ...history,
-      vscode.LanguageModelChatMessage.User(buildQuizContinuationPrompt(answer, currentQuiz))
+      vscode.LanguageModelChatMessage.User(
+        buildQuizContinuationPrompt(
+          answer,
+          currentQuiz,
+          currentQuiz.explainWrongAnswersInDetail
+        )
+      )
     ];
 
     const isFinalQuestion = currentQuiz.currentQuestion >= currentQuiz.totalQuestions;
@@ -509,6 +547,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
         isBusy: this.isBusy,
         linkedinDraft: this.linkedinDraft,
         quickPrompts: QUICK_PROMPTS,
+        selectedDetailedWrongAnswers: this.selectedDetailedWrongAnswers,
         selectedQuestionCount: this.selectedQuestionCount,
         transcript: this.transcript
       }
@@ -914,6 +953,20 @@ export class CisspBuddyPanel implements vscode.Disposable {
         font-size: 13px;
       }
 
+      .composer__checkbox {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .composer__checkbox input {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--gold-dark);
+      }
+
       .composer__control select {
         min-width: 88px;
         border: 1px solid rgba(216, 177, 92, 0.24);
@@ -1072,7 +1125,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
                 <h3>How It Works</h3>
                 <p>
                   A VS Code extension host coordinates a branded webview UI, GitHub Copilot model
-                  calls, quiz-session state, local guardrails, PDF export, and LinkedIn draft generation.
+                  calls, quiz-session state, local guardrails, configurable wrong-answer review depth,
+                  PDF export, and LinkedIn draft generation.
                 </p>
               </article>
               <article class="docs__card">
@@ -1112,6 +1166,10 @@ F5</div>
             <label for="questionCount">Quiz length</label>
             <select id="questionCount"></select>
           </div>
+          <label class="composer__checkbox" for="detailedWrongAnswers">
+            <input id="detailedWrongAnswers" type="checkbox" />
+            Explain wrong answers in detail
+          </label>
           <div id="quizSummary" class="quiz-summary">
             Choose how many questions to ask on the next topic. Default is 1.
           </div>
@@ -1148,6 +1206,7 @@ F5</div>
         isBusy: false,
         linkedinDraft: null,
         quickPrompts: [],
+        selectedDetailedWrongAnswers: false,
         selectedQuestionCount: MIN_QUIZ_QUESTIONS,
         transcript: []
       };
@@ -1159,6 +1218,7 @@ F5</div>
       const promptForm = document.getElementById('promptForm');
       const promptInput = document.getElementById('promptInput');
       const questionCountSelect = document.getElementById('questionCount');
+      const detailedWrongAnswersInput = document.getElementById('detailedWrongAnswers');
       const sendButton = document.getElementById('sendButton');
       const exportButton = document.getElementById('exportButton');
       const resetButton = document.getElementById('resetButton');
@@ -1185,6 +1245,10 @@ F5</div>
 
       function selectedQuestionCount() {
         return Number(questionCountSelect.value || state.selectedQuestionCount || MIN_QUIZ_QUESTIONS);
+      }
+
+      function detailedWrongAnswersEnabled() {
+        return Boolean(detailedWrongAnswersInput.checked);
       }
 
       function renderQuickPrompts() {
@@ -1257,7 +1321,10 @@ F5</div>
             state.activeQuiz.totalQuestions +
             ' on ' +
             state.activeQuiz.topic +
-            '.';
+            '. ' +
+            (state.activeQuiz.explainWrongAnswersInDetail
+              ? 'Detailed wrong-answer review is on.'
+              : 'Detailed wrong-answer review is off.');
           return;
         }
 
@@ -1272,7 +1339,7 @@ F5</div>
         }
 
         quizSummaryElement.textContent =
-          'Choose how many questions to ask on the next topic. Default is 1.';
+          'Choose how many questions to ask on the next topic. Turn on detailed wrong-answer review if you want a deeper explanation of the three distractors.';
       }
 
       function renderControls() {
@@ -1281,8 +1348,10 @@ F5</div>
           ? state.busyLabel || 'Preparing your next study step...'
           : 'Ask a CISSP topic or answer with A, B, C, or D.';
         questionCountSelect.value = String(state.selectedQuestionCount || MIN_QUIZ_QUESTIONS);
+        detailedWrongAnswersInput.checked = Boolean(state.selectedDetailedWrongAnswers);
         promptInput.disabled = state.isBusy;
         questionCountSelect.disabled = state.isBusy;
+        detailedWrongAnswersInput.disabled = state.isBusy;
         sendButton.disabled = state.isBusy || trimmedInput.length === 0;
         exportButton.disabled = state.transcript.length === 0;
         resetButton.disabled = state.transcript.length === 0 || state.isBusy;
@@ -1310,7 +1379,8 @@ F5</div>
         vscode.postMessage({
           type: 'submitPrompt',
           text,
-          questionCount: selectedQuestionCount()
+          questionCount: selectedQuestionCount(),
+          detailedWrongAnswers: detailedWrongAnswersEnabled()
         });
       });
 
@@ -1322,6 +1392,13 @@ F5</div>
         vscode.postMessage({
           type: 'setQuestionCount',
           questionCount: selectedQuestionCount()
+        });
+      });
+
+      detailedWrongAnswersInput.addEventListener('change', () => {
+        vscode.postMessage({
+          type: 'setDetailedWrongAnswers',
+          enabled: detailedWrongAnswersEnabled()
         });
       });
 
@@ -1360,7 +1437,8 @@ F5</div>
         vscode.postMessage({
           type: 'quickPrompt',
           text: button.getAttribute('data-quick-prompt') || '',
-          questionCount: selectedQuestionCount()
+          questionCount: selectedQuestionCount(),
+          detailedWrongAnswers: detailedWrongAnswersEnabled()
         });
       });
 
@@ -1386,6 +1464,7 @@ F5</div>
         state.isBusy = event.data.payload.isBusy;
         state.linkedinDraft = event.data.payload.linkedinDraft;
         state.quickPrompts = event.data.payload.quickPrompts;
+        state.selectedDetailedWrongAnswers = event.data.payload.selectedDetailedWrongAnswers;
         state.selectedQuestionCount = event.data.payload.selectedQuestionCount;
         state.transcript = event.data.payload.transcript;
         render();

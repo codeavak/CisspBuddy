@@ -16,6 +16,7 @@ This project is intentionally built to showcase more than a simple chat wrapper.
 
 - Standalone app experience inside VS Code instead of a plain chat thread
 - Configurable quiz length from 1 to 10 questions per study topic
+- Configurable wrong-answer review depth so users can ask for detailed explanations of all three distractors
 - Interactive answer review with explanations and follow-up questions until the selected quiz count is complete
 - LinkedIn post generator that produces a professional draft from the studied topic
 - PDF export for study sessions and demos
@@ -64,7 +65,7 @@ npx @vscode/vsce package --no-yarn
 Install the VSIX locally with:
 
 ```bash
-code --install-extension cissp-buddy-0.0.4.vsix --force
+code --install-extension cissp-buddy-0.0.5.vsix --force
 ```
 
 ## Documentation

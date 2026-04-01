@@ -43,7 +43,7 @@ npx @vscode/vsce package --no-yarn
 This produces a file similar to:
 
 ```text
-cissp-buddy-0.0.4.vsix
+cissp-buddy-0.0.5.vsix
 ```
 
 ## Installing The Packaged Extension
@@ -51,7 +51,7 @@ cissp-buddy-0.0.4.vsix
 Install or update the extension locally with:
 
 ```bash
-code --install-extension cissp-buddy-0.0.4.vsix --force
+code --install-extension cissp-buddy-0.0.5.vsix --force
 ```
 
 Verify the installed version:
@@ -67,6 +67,7 @@ code --list-extensions --show-versions
 - The branded icon appears in VS Code
 - `CISSP Budyy: Open Study App` opens the standalone app
 - Quiz length can be selected from `1` to `10`
+- Wrong-answer review can be switched between concise and detailed
 - A topic launches the guided quiz flow
 - Answering `A`, `B`, `C`, or `D` advances the session correctly
 - LinkedIn post generation produces a draft

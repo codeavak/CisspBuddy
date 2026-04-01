@@ -1,8 +1,8 @@
 {
   "name": "cissp-buddy",
   "displayName": "Johnny Avakian Presents CISSP Budyy",
-  "description": "Johnny Avakian presents a portfolio-grade VS Code CISSP study app with guided quizzes, LinkedIn draft generation, PDF export, and defensive guardrails.",
-  "version": "0.0.4",
+  "description": "Johnny Avakian presents a portfolio-grade VS Code CISSP study app with guided quizzes, detailed wrong-answer review, LinkedIn draft generation, PDF export, and defensive guardrails.",
+  "version": "0.0.5",
   "publisher": "codeavak",
   "icon": "media/cissp-budyy-icon.png",
   "license": "MIT",

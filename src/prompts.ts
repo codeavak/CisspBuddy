@@ -8,7 +8,7 @@ export const BASE_PROMPT = [
   'Help the user understand CISSP concepts with clear, concise explanations that reflect the exam mindset.',
   'Follow the app turn instructions exactly, especially question numbering, when to reveal answers, and when to stop asking new questions.',
   'Each multiple-choice question must have exactly four options labeled A, B, C, and D with one best answer.',
-  'When grading, explain the correct answer in CISSP terms and briefly explain why the other options are weaker.',
+  'When grading, explain the correct answer in CISSP terms and follow the distractor-review depth requested by the app instructions.',
   'Keep the tone encouraging, precise, and exam-focused.',
   'Prefer short sections and bullets over long essays.',
   'Do not answer non-CISSP topics beyond a brief redirection back to CISSP study.',
@@ -43,18 +43,36 @@ export function buildLaunchPrompt(
   return undefined;
 }
 
-export function buildQuizStartPrompt(topic: string, questionCount: number): string {
+function buildDistractorInstruction(explainWrongAnswersInDetail: boolean): string[] {
+  if (explainWrongAnswersInDetail) {
+    return [
+      'For each of the three wrong options, provide a dedicated explanation of why it is wrong in this scenario.',
+      'Name each wrong option explicitly and explain the CISSP reasoning behind why it is weaker or incorrect.'
+    ];
+  }
+
+  return ['Briefly explain why the other options are weaker.'];
+}
+
+export function buildQuizStartPrompt(
+  topic: string,
+  questionCount: number,
+  explainWrongAnswersInDetail: boolean
+): string {
   return [
     `Study topic: ${topic}`,
     '',
     'Respond as a CISSP study coach inside a polished VS Code app.',
     `Explain the topic clearly first, then ask Question 1 of ${questionCount}.`,
     `The user has asked for a total of ${questionCount} question${questionCount === 1 ? '' : 's'} on this topic.`,
+    explainWrongAnswersInDetail
+      ? 'When grading later, explain each wrong option in detail.'
+      : 'When grading later, a concise comparison of the wrong options is enough.',
     'Do not reveal the answer yet.',
     'End by instructing the user to reply with A, B, C, or D.',
     '',
     'Use this structure:',
-    `Concept`,
+    'Concept',
     `Question 1 of ${questionCount}`,
     'Options',
     'Reply prompt'
@@ -63,10 +81,15 @@ export function buildQuizStartPrompt(topic: string, questionCount: number): stri
 
 export function buildQuizContinuationPrompt(
   answer: string,
-  session: QuizSession
+  session: QuizSession,
+  explainWrongAnswersInDetail: boolean
 ): string {
   const isFinalQuestion = session.currentQuestion >= session.totalQuestions;
   const nextQuestionNumber = session.currentQuestion + 1;
+  const distractorInstruction = buildDistractorInstruction(explainWrongAnswersInDetail);
+  const distractorHeading = explainWrongAnswersInDetail
+    ? 'Why each wrong option is wrong'
+    : 'Why the other options are weaker';
 
   if (isFinalQuestion) {
     return [
@@ -74,13 +97,13 @@ export function buildQuizContinuationPrompt(
       '',
       'Grade the answer first.',
       'Explain the correct answer in CISSP terms.',
-      'Briefly explain why the other options are weaker.',
+      ...distractorInstruction,
       'Do not ask another question.',
       'End with a short session wrap-up containing exactly three key takeaways and a one-line quiz complete message.',
       '',
       'Use this structure:',
       'Answer Review',
-      'Why the other options are weaker',
+      distractorHeading,
       'Three key takeaways',
       'Quiz complete'
     ].join('\n');
@@ -91,14 +114,14 @@ export function buildQuizContinuationPrompt(
     '',
     'Grade the answer first.',
     'Explain the correct answer in CISSP terms.',
-    'Briefly explain why the other options are weaker.',
+    ...distractorInstruction,
     `Then ask Question ${nextQuestionNumber} of ${session.totalQuestions}.`,
     'Do not reveal the new answer yet.',
     'End by instructing the user to reply with A, B, C, or D.',
     '',
     'Use this structure:',
     'Answer Review',
-    'Why the other options are weaker',
+    distractorHeading,
     `Question ${nextQuestionNumber} of ${session.totalQuestions}`,
     'Options',
     'Reply prompt'
@@ -109,7 +132,7 @@ export function buildLinkedInPostPrompt(topic: string): string {
   return [
     `Create a professional LinkedIn post about this CISSP or defensive security topic: ${topic}`,
     '',
-    'Write in Johnny Avakian’s voice as an engineer building a polished CISSP study product.',
+    "Write in Johnny Avakian's voice as an engineer building a polished CISSP study product.",
     'Keep the post professional, credible, and showcase-worthy.',
     'Avoid emojis and hypey language.',
     'Aim for roughly 180 to 260 words.',

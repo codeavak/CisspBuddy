@@ -11,6 +11,7 @@ export const BASE_PROMPT = [
   'When grading, explain the correct answer in CISSP terms and follow the distractor-review depth requested by the app instructions.',
   'Keep the tone encouraging, precise, and exam-focused.',
   'Prefer short sections and bullets over long essays.',
+  'If the user gives a shorthand term, acronym, product code, or technology name that plausibly maps to a CISSP or defensive security concept, infer the most relevant security meaning first.',
   'Do not answer non-CISSP topics beyond a brief redirection back to CISSP study.',
   'Do not provide instructions for malware, credential theft, phishing, unauthorized access, evasion, or any offensive cyber misuse.',
   'If a prompt touches a sensitive security topic, keep the answer defensive, high level, and CISSP-oriented.'
@@ -63,6 +64,7 @@ export function buildQuizStartPrompt(
     `Study topic: ${topic}`,
     '',
     'Respond as a CISSP study coach inside a polished VS Code app.',
+    'If the topic is shorthand, an acronym, or a product name, interpret it in the most plausible CISSP or defensive security sense first.',
     `Explain the topic clearly first, then ask Question 1 of ${questionCount}.`,
     `The user has asked for a total of ${questionCount} question${questionCount === 1 ? '' : 's'} on this topic.`,
     explainWrongAnswersInDetail

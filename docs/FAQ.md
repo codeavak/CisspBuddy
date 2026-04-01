@@ -45,6 +45,10 @@ The app is intentionally scoped to:
 
 It is not intended to be a general-purpose chatbot.
 
+## Can I Use Shorthand Prompts Like FM-200?
+
+Yes. The app now gives shorthand, acronyms, and product-code style prompts a chance to resolve into a CISSP or defensive security concept before rejecting them. If the returned content still is not genuinely security-related, the app redirects back to CISSP scope instead of starting the quiz.
+
 ## What Happens If A User Asks Something Irrelevant Or Unsafe?
 
 The extension applies local guardrails before calling the model. Those checks reject:

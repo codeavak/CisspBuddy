@@ -1,6 +1,11 @@
 import * as vscode from 'vscode';
 
-import { evaluatePrompt, isChoiceAnswer } from './guardrails';
+import {
+  evaluatePrompt,
+  getOutOfScopeResponse,
+  isChoiceAnswer,
+  isSecurityRelatedResponse
+} from './guardrails';
 import { createTranscriptPdf } from './pdf';
 import {
   BASE_PROMPT,
@@ -258,11 +263,33 @@ export class CisspBuddyPanel implements vscode.Disposable {
       `Preparing question 1 of ${pendingQuiz.totalQuestions}...`
     );
 
-    if (succeeded) {
-      this.activeQuiz = pendingQuiz;
-      this.lastStudyTopic = topic;
+    if (!succeeded) {
+      this.postState();
+      return;
     }
 
+    if (
+      guardrailOutcome.requiresResponseValidation &&
+      !isSecurityRelatedResponse(assistantEntry.text)
+    ) {
+      assistantEntry.text = getOutOfScopeResponse();
+      this.postState();
+      return;
+    }
+
+    const quizKickoffValidationMessage = this.getQuizKickoffValidationMessage(
+      topic,
+      assistantEntry.text,
+      pendingQuiz.totalQuestions
+    );
+    if (quizKickoffValidationMessage) {
+      assistantEntry.text = quizKickoffValidationMessage;
+      this.postState();
+      return;
+    }
+
+    this.activeQuiz = pendingQuiz;
+    this.lastStudyTopic = topic;
     this.postState();
   }
 
@@ -371,6 +398,17 @@ export class CisspBuddyPanel implements vscode.Disposable {
       return;
     }
 
+    if (
+      guardrailOutcome.requiresResponseValidation &&
+      !isSecurityRelatedResponse(draftText)
+    ) {
+      await vscode.window.showWarningMessage(
+        'That topic did not resolve to a CISSP or defensive security concept for the LinkedIn draft.'
+      );
+      this.postState();
+      return;
+    }
+
     this.linkedinDraft = {
       topic: resolvedTopic,
       text: draftText,
@@ -433,6 +471,22 @@ export class CisspBuddyPanel implements vscode.Disposable {
   private appendAssistantMessage(text: string): void {
     this.transcript.push(this.createEntry('assistant', text));
     this.postState();
+  }
+
+  private getQuizKickoffValidationMessage(
+    topic: string,
+    responseText: string,
+    questionCount: number
+  ): string | undefined {
+    if (looksLikeQuizKickoffResponse(responseText, questionCount)) {
+      return undefined;
+    }
+
+    return [
+      `I could not turn "${topic}" into a clean CISSP study round yet.`,
+      '',
+      'Try asking again with a little more context, such as "Explain this for CISSP and quiz me."'
+    ].join('\n');
   }
 
   private async streamModelResponse(
@@ -1634,6 +1688,28 @@ function clampQuestionCount(questionCount: number): number {
   }
 
   return Math.min(MAX_QUIZ_QUESTIONS, Math.max(MIN_QUIZ_QUESTIONS, Math.round(questionCount)));
+}
+
+function looksLikeQuizKickoffResponse(text: string, questionCount: number): boolean {
+  const normalizedText = text.trim();
+
+  if (normalizedText.length === 0) {
+    return false;
+  }
+
+  const questionPattern = new RegExp(`question\\s*1\\s*of\\s*${questionCount}`, 'i');
+  return (
+    questionPattern.test(normalizedText) &&
+    hasChoiceOption(normalizedText, 'A') &&
+    hasChoiceOption(normalizedText, 'B') &&
+    hasChoiceOption(normalizedText, 'C') &&
+    hasChoiceOption(normalizedText, 'D') &&
+    /(?:reply|respond|answer)\s+with\s+a,\s*b,\s*c,\s*or\s*d/i.test(normalizedText)
+  );
+}
+
+function hasChoiceOption(text: string, optionLabel: 'A' | 'B' | 'C' | 'D'): boolean {
+  return new RegExp(`(?:^|\\n)\\s*(?:[-*]\\s*)?${optionLabel}(?:\\.|\\)|:|-)\\s+\\S`, 'm').test(text);
 }
 
 function getNonce(): string {

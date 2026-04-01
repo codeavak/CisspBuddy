@@ -102,6 +102,7 @@ If you are on a lower-resolution display or a shorter editor window:
    - `Explain zero trust`
    - `Quiz me on due diligence`
    - `Teach me business continuity`
+   - `fm-200`
 4. Read the explanation
 5. Answer the quiz question with `A`, `B`, `C`, or `D`
 6. Continue until the selected number of questions is complete
@@ -169,12 +170,15 @@ It will help with:
 - CISSP topics
 - defensive security concepts
 - exam-style questions
+- shorthand security terms when the model can reasonably resolve them into a CISSP topic
 
 It will reject:
 
 - irrelevant non-CISSP prompts
 - offensive or harmful cyber requests
 - requests that fall outside the intended study use case
+
+If you enter a shorthand term like `fm-200`, the app now gives the model a chance to resolve it in a CISSP or defensive security context first. If the response still does not come back as a real security study topic, the app redirects you back to CISSP scope instead of starting a bad quiz.
 
 ## Best Demo Topics
 

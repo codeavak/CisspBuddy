@@ -1347,6 +1347,12 @@ F5</div>
                 <div class="toolbar">
                   <button id="resetButton" class="button--ghost" type="button">New Session</button>
                   <button id="exportButton" class="button--ghost" type="button">Export PDF</button>
+                  <button id="generateLinkedInToolbarButton" class="button--ghost" type="button">
+                    Generate LinkedIn
+                  </button>
+                  <button id="copyLinkedInToolbarButton" class="button--ghost" type="button">
+                    Copy Draft
+                  </button>
                 </div>
                 <div class="composer__actions-right">
                   <button id="sendButton" class="button--primary" type="submit">
@@ -1399,6 +1405,8 @@ F5</div>
       const sendButton = document.getElementById('sendButton');
       const exportButton = document.getElementById('exportButton');
       const resetButton = document.getElementById('resetButton');
+      const generateLinkedInToolbarButton = document.getElementById('generateLinkedInToolbarButton');
+      const copyLinkedInToolbarButton = document.getElementById('copyLinkedInToolbarButton');
       const generateLinkedInButton = document.getElementById('generateLinkedInButton');
       const copyLinkedInButton = document.getElementById('copyLinkedInButton');
       const linkedinDraftElement = document.getElementById('linkedinDraft');
@@ -1495,6 +1503,24 @@ F5</div>
           : 'Generate a LinkedIn draft from the current topic in the composer or the most recent quiz topic.';
       }
 
+      function requestLinkedInDraft() {
+        vscode.postMessage({
+          type: 'generateLinkedInPost',
+          topic: promptInput.value.trim()
+        });
+      }
+
+      function copyLinkedInDraft() {
+        if (!state.linkedinDraft) {
+          return;
+        }
+
+        vscode.postMessage({
+          type: 'copyText',
+          text: state.linkedinDraft.text
+        });
+      }
+
       function renderQuizSummary() {
         if (state.activeQuiz && state.activeQuiz.awaitingAnswer) {
           quizSummaryElement.textContent =
@@ -1538,6 +1564,8 @@ F5</div>
         sendButton.disabled = state.isBusy || trimmedInput.length === 0;
         exportButton.disabled = state.transcript.length === 0;
         resetButton.disabled = state.transcript.length === 0 || state.isBusy;
+        generateLinkedInToolbarButton.disabled = state.isBusy;
+        copyLinkedInToolbarButton.disabled = !state.linkedinDraft || state.linkedinDraft.text.length === 0;
         generateLinkedInButton.disabled = state.isBusy;
         copyLinkedInButton.disabled = !state.linkedinDraft || state.linkedinDraft.text.length === 0;
       }
@@ -1613,22 +1641,20 @@ F5</div>
         vscode.postMessage({ type: 'resetTranscript' });
       });
 
+      generateLinkedInToolbarButton.addEventListener('click', () => {
+        requestLinkedInDraft();
+      });
+
+      copyLinkedInToolbarButton.addEventListener('click', () => {
+        copyLinkedInDraft();
+      });
+
       generateLinkedInButton.addEventListener('click', () => {
-        vscode.postMessage({
-          type: 'generateLinkedInPost',
-          topic: promptInput.value.trim()
-        });
+        requestLinkedInDraft();
       });
 
       copyLinkedInButton.addEventListener('click', () => {
-        if (!state.linkedinDraft) {
-          return;
-        }
-
-        vscode.postMessage({
-          type: 'copyText',
-          text: state.linkedinDraft.text
-        });
+        copyLinkedInDraft();
       });
 
       quickPromptsElement.addEventListener('click', (event) => {

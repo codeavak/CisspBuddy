@@ -51,6 +51,8 @@ Buttons:
 - `Generate LinkedIn Post`
 - `Copy Draft`
 
+The same LinkedIn actions are also available in the floating Study Composer so you do not need to scroll back up to the showcase panel on smaller screens.
+
 ### In-App Documentation
 
 This section links directly to the longer GitHub documentation.
@@ -84,6 +86,8 @@ Controls:
   - enter a CISSP topic or answer with `A`, `B`, `C`, or `D`
 - `New Session`
 - `Export PDF`
+- `Generate LinkedIn`
+- `Copy Draft`
 - `Ask CISSP Buddy`
 
 ### Reading On Smaller Screens

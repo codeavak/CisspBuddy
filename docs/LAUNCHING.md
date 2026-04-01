@@ -65,7 +65,7 @@ cissp-buddy-<version>.vsix
 Example:
 
 ```text
-cissp-buddy-0.0.18.vsix
+cissp-buddy-0.0.19.vsix
 ```
 
 ## Installing Or Updating The Packaged Extension
@@ -79,7 +79,7 @@ code --install-extension cissp-buddy-<version>.vsix --force
 Example:
 
 ```bash
-code --install-extension cissp-buddy-0.0.18.vsix --force
+code --install-extension cissp-buddy-0.0.19.vsix --force
 ```
 
 After installation:
@@ -108,7 +108,7 @@ Before pushing a release-quality change, verify all of the following:
 - detailed wrong-answer review can be toggled on and off
 - a CISSP topic starts a guided study session
 - answering `A`, `B`, `C`, or `D` advances the quiz correctly
-- the LinkedIn draft generator produces content in the transcript with visible download buttons
+- the LinkedIn draft generator produces content in the transcript with a topic-specific image and visible download buttons
 - PDF export produces a file
 - irrelevant or unsafe prompts are rejected by the guardrails
 - documentation reflects the current behavior
@@ -147,7 +147,7 @@ Use this sequence to walk through the product clearly:
 4. Ask a CISSP topic such as zero trust or due diligence
 5. Answer at least one question to show the guided grading loop
 6. Generate a LinkedIn post from the same topic
-7. Show the LinkedIn draft card in the answer area and download the post or hero image
+7. Show the LinkedIn draft card in the answer area and download the post or generated image
 8. Export the transcript to PDF
 9. Open the website and repo links from inside the app
 

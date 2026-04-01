@@ -146,3 +146,36 @@ export function buildLinkedInPostPrompt(topic: string): string {
     'Return only the LinkedIn post text with clean spacing, ready to paste.'
   ].join('\n');
 }
+
+export function buildLinkedInGraphicPrompt(topic: string, draftText: string): string {
+  return [
+    `Create a topic-specific visual brief for a LinkedIn graphic about this CISSP or defensive security topic: ${topic}`,
+    '',
+    'You are designing a polished social image for Johnny Avakian\'s CISSP Buddy.',
+    'The graphic should feel credible, modern, and professional, not cartoonish or generic.',
+    'Use the draft below as context so the image matches the main learning point.',
+    '',
+    'LinkedIn draft context:',
+    draftText,
+    '',
+    'Return strict JSON only. Do not wrap it in markdown fences.',
+    'Use this exact shape:',
+    '{',
+    '  "eyebrow": "short label, 2 to 4 words",',
+    '  "headline": "strong headline, max 58 characters",',
+    '  "subheadline": "one concise supporting line, max 120 characters",',
+    '  "keywords": ["keyword one", "keyword two", "keyword three"],',
+    '  "motif": "one of: shield, network, continuity, identity, governance, data, incident",',
+    '  "palette": {',
+    '    "backgroundStart": "#112233",',
+    '    "backgroundEnd": "#223344",',
+    '    "accent": "#44cc88",',
+    '    "highlight": "#d8b15c"',
+    '  }',
+    '}',
+    '',
+    'Keep the keywords to one to three words each.',
+    'Make the headline and subheadline topic-specific.',
+    'Choose colors that feel premium and readable on a dark background.'
+  ].join('\n');
+}

@@ -4,6 +4,8 @@ export interface TranscriptEntry {
   timestamp: string;
   kind?: 'message' | 'linkedinDraft';
   topic?: string;
+  imageAlt?: string;
+  visualSpec?: LinkedInVisualSpec;
 }
 
 export interface QuizSession {
@@ -20,4 +22,31 @@ export interface LinkedInDraft {
   topic: string;
   text: string;
   generatedAt: string;
+  imageAlt: string;
+  visualSpec: LinkedInVisualSpec;
+}
+
+export type LinkedInVisualMotif =
+  | 'shield'
+  | 'network'
+  | 'continuity'
+  | 'identity'
+  | 'governance'
+  | 'data'
+  | 'incident';
+
+export interface LinkedInVisualPalette {
+  backgroundStart: string;
+  backgroundEnd: string;
+  accent: string;
+  highlight: string;
+}
+
+export interface LinkedInVisualSpec {
+  eyebrow: string;
+  headline: string;
+  subheadline: string;
+  keywords: string[];
+  motif: LinkedInVisualMotif;
+  palette: LinkedInVisualPalette;
 }

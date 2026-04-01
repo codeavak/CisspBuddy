@@ -22,23 +22,28 @@ The extension uses a standard VS Code extension-host architecture:
    - owns the webview panel lifecycle
    - maintains transcript state
    - manages the active quiz session
-  - coordinates quiz turns, PDF export, LinkedIn draft generation, and transcript download actions
+   - coordinates quiz turns, PDF export, LinkedIn draft generation, AI-designed visual generation, and transcript download actions
    - streams model output into the UI
 
 3. `src/prompts.ts`
-   - centralizes prompt contracts for quiz kickoff, quiz continuation, grading, and LinkedIn post generation
+   - centralizes prompt contracts for quiz kickoff, quiz continuation, grading, LinkedIn post generation, and LinkedIn graphic briefs
    - keeps the orchestration logic readable and intentionally structured
 
-4. `src/guardrails.ts`
+4. `src/linkedinVisual.ts`
+   - parses the model-generated LinkedIn image brief
+   - sanitizes colors, wording, and motifs
+   - provides a reliable fallback visual spec when the model returns imperfect JSON
+
+5. `src/guardrails.ts`
    - applies local relevance and safety checks before the model is called
    - allows CISSP topics and quiz answers
    - blocks irrelevant prompts and unsafe offensive-security requests
 
-5. `src/pdf.ts`
+6. `src/pdf.ts`
    - creates PDF output without adding a heavyweight PDF dependency
    - generates a transcript PDF suitable for study review, mentoring, sharing, and accountability
 
-6. `media/`
+7. `media/`
    - contains brand assets for the extension tile and in-app experience
 
 ## How The Code Maps To The Product
@@ -90,9 +95,10 @@ This is handled as application state, not as a loose UI hint, so each grading tu
 The LinkedIn generator is intentionally separate from the quiz transcript flow:
 
 - it prefers the last studied topic and falls back to the composer only before a study session starts
-- it calls the model with a focused content-authoring prompt
+- it calls the model with a focused content-authoring prompt for the post
+- it calls the model again for a structured visual brief tied to the same topic
 - it stores the output as a separate `LinkedInDraft`
-- it renders the result into the transcript with `hero.png` and dedicated download actions
+- it renders the result into the transcript as a topic-specific branded image with dedicated download actions
 
 This separation helps the app support reflection and sharing without disrupting the core study experience.
 
@@ -147,8 +153,8 @@ That decision matters because this project is meant to be a dependable CISSP stu
 - `src/extension.ts`
 - `src/panel.ts`
 - `src/prompts.ts`
+- `src/linkedinVisual.ts`
 - `src/guardrails.ts`
 - `src/pdf.ts`
-- `media/hero.png`
 - `media/cissp-buddy-icon.png`
 - `media/cissp-buddy-logo.png`

@@ -1,3 +1,4 @@
+import * as fs from 'node:fs';
 import * as vscode from 'vscode';
 
 import {
@@ -9,6 +10,7 @@ import {
 import { createTranscriptPdf } from './pdf';
 import {
   BASE_PROMPT,
+  buildLinkedInGraphicPrompt,
   buildLinkedInPostPrompt,
   buildQuizContinuationPrompt,
   buildQuizStartPrompt,
@@ -16,6 +18,7 @@ import {
   MIN_QUIZ_QUESTIONS,
   QUICK_PROMPTS
 } from './prompts';
+import { parseLinkedInVisualSpec } from './linkedinVisual';
 import { LinkedInDraft, QuizSession, TranscriptEntry } from './types';
 
 type WebviewMessage =
@@ -35,7 +38,7 @@ type WebviewMessage =
   | { type: 'setQuestionCount'; questionCount: number }
   | { type: 'setDetailedWrongAnswers'; enabled: boolean }
   | { type: 'generateLinkedInPost'; topic?: string }
-  | { type: 'downloadHeroImage' }
+  | { type: 'downloadLinkedInGraphic'; topic: string; dataUrl: string }
   | { type: 'downloadLinkedInPost'; topic: string; text: string; timestamp: string }
   | { type: 'exportPdf' }
   | { type: 'resetTranscript' }
@@ -203,8 +206,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
       case 'generateLinkedInPost':
         await this.generateLinkedInPost(message.topic);
         return;
-      case 'downloadHeroImage':
-        await this.downloadHeroImage();
+      case 'downloadLinkedInGraphic':
+        await this.downloadLinkedInGraphic(message.topic, message.dataUrl);
         return;
       case 'downloadLinkedInPost':
         await this.downloadLinkedInPost(message.topic, message.text, message.timestamp);
@@ -420,10 +423,21 @@ export class CisspBuddyPanel implements vscode.Disposable {
       return;
     }
 
+    const visualSpecResponse = await this.captureModelResponse(
+      [
+        vscode.LanguageModelChatMessage.User(BASE_PROMPT),
+        vscode.LanguageModelChatMessage.User(buildLinkedInGraphicPrompt(resolvedTopic, draftText))
+      ],
+      'Designing a topic-specific LinkedIn graphic...'
+    );
+    const visualSpec = parseLinkedInVisualSpec(visualSpecResponse, resolvedTopic);
+
     this.linkedinDraft = {
       topic: resolvedTopic,
       text: draftText,
-      generatedAt: new Date().toLocaleString()
+      generatedAt: new Date().toLocaleString(),
+      imageAlt: `Topic-specific LinkedIn graphic for ${resolvedTopic}`,
+      visualSpec
     };
     this.transcript.push(this.createLinkedInDraftEntry(this.linkedinDraft));
 
@@ -491,7 +505,9 @@ export class CisspBuddyPanel implements vscode.Disposable {
       role: 'assistant',
       text: draft.text,
       timestamp: draft.generatedAt,
-      topic: draft.topic
+      topic: draft.topic,
+      imageAlt: draft.imageAlt,
+      visualSpec: draft.visualSpec
     };
   }
 
@@ -500,11 +516,21 @@ export class CisspBuddyPanel implements vscode.Disposable {
     this.postState();
   }
 
-  private async downloadHeroImage(): Promise<void> {
-    const sourceUri = vscode.Uri.joinPath(this.extensionUri, 'media', 'hero.png');
+  private async downloadLinkedInGraphic(topic: string, dataUrl: string): Promise<void> {
+    const pngBytes = decodePngDataUrl(dataUrl);
+    if (!pngBytes) {
+      await vscode.window.showErrorMessage(
+        'CISSP Buddy could not prepare the LinkedIn graphic download. Please generate it again.'
+      );
+      return;
+    }
+
+    const safeTopic = slugify(topic) || 'cissp-buddy-linkedin-graphic';
     const baseFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
     const targetUri = await vscode.window.showSaveDialog({
-      defaultUri: baseFolder ? vscode.Uri.joinPath(baseFolder, 'hero.png') : undefined,
+      defaultUri: baseFolder
+        ? vscode.Uri.joinPath(baseFolder, `${safeTopic}-linkedin-graphic.png`)
+        : undefined,
       filters: {
         PNG: ['png']
       }
@@ -514,9 +540,8 @@ export class CisspBuddyPanel implements vscode.Disposable {
       return;
     }
 
-    const fileBytes = await vscode.workspace.fs.readFile(sourceUri);
-    await vscode.workspace.fs.writeFile(targetUri, fileBytes);
-    await vscode.window.showInformationMessage(`Hero image saved to ${targetUri.fsPath}`);
+    await vscode.workspace.fs.writeFile(targetUri, pngBytes);
+    await vscode.window.showInformationMessage(`LinkedIn graphic saved to ${targetUri.fsPath}`);
   }
 
   private async downloadLinkedInPost(
@@ -693,8 +718,11 @@ export class CisspBuddyPanel implements vscode.Disposable {
 
   private getHtml(webview: vscode.Webview): string {
     const nonce = getNonce();
-    const heroUri = webview.asWebviewUri(
-      vscode.Uri.joinPath(this.extensionUri, 'media', 'hero.png')
+    const bannerUri = webview.asWebviewUri(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-logo.png')
+    );
+    const appLogoDataUrl = readPngDataUrl(
+      vscode.Uri.joinPath(this.extensionUri, 'media', 'cissp-buddy-icon.png')
     );
 
     return `<!DOCTYPE html>
@@ -1055,7 +1083,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
         gap: 16px;
       }
 
-      .message__linkedin-hero {
+      .message__linkedin-visual {
         width: min(100%, 620px);
         height: auto;
         display: block;
@@ -1275,7 +1303,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
     <div class="shell">
       <section class="hero">
         <div class="hero__brand">
-          <img class="hero__logo" src="${heroUri}" alt="CISSP Buddy hero image" />
+          <img class="hero__logo" src="${bannerUri}" alt="CISSP Buddy app logo" />
           <div class="hero__copy">
             <p class="hero__eyebrow">Study Better For CISSP</p>
             <h1 class="hero__title">Clear explanations, disciplined practice, and smarter preparation.</h1>
@@ -1326,10 +1354,11 @@ export class CisspBuddyPanel implements vscode.Disposable {
         <div class="two-up">
           <section class="creator">
             <p class="section__eyebrow">LinkedIn Draft</p>
-            <h2 class="section__title">Generate a post that appears directly in the answer area.</h2>
+            <h2 class="section__title">Generate a post and topic image directly in the answer area.</h2>
             <p class="section__body">
               This uses the last CISSP topic you studied, or the composer topic if you have not
-              started a study session yet, then places the generated post and hero image into the
+              started a study session yet, then places the generated post and a topic-specific
+              LinkedIn image into the
               transcript so you can review and download them together.
             </p>
             <div class="creator__actions">
@@ -1338,7 +1367,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
               </button>
             </div>
             <div id="linkedinMeta" class="creator__meta">
-              Ready to add a downloadable LinkedIn post to the answer area.
+              Ready to add a downloadable LinkedIn post and image to the answer area.
             </div>
           </section>
 
@@ -1480,7 +1509,7 @@ F5</div>
 
     <script nonce="${nonce}">
       const BRAND_NAME_TEXT = ${JSON.stringify(BRAND_NAME)};
-      const HERO_IMAGE_URL = ${JSON.stringify(heroUri.toString())};
+      const APP_LOGO_DATA_URL = ${JSON.stringify(appLogoDataUrl)};
       const MIN_QUIZ_QUESTIONS = ${MIN_QUIZ_QUESTIONS};
       const MAX_QUIZ_QUESTIONS = ${MAX_QUIZ_QUESTIONS};
 
@@ -1539,6 +1568,264 @@ F5</div>
           .replace(/'/g, '&#39;');
       }
 
+      function escapeSvg(value) {
+        return escapeHtml(String(value || ''));
+      }
+
+      const linkedInGraphicCache = new Map();
+
+      function wrapSvgText(value, maxCharactersPerLine) {
+        const words = String(value || '').trim().split(/\s+/).filter(Boolean);
+        if (words.length === 0) {
+          return [];
+        }
+
+        const lines = [];
+        let currentLine = '';
+
+        words.forEach((word) => {
+          const nextLine = currentLine ? currentLine + ' ' + word : word;
+          if (nextLine.length <= maxCharactersPerLine) {
+            currentLine = nextLine;
+            return;
+          }
+
+          if (currentLine) {
+            lines.push(currentLine);
+          }
+          currentLine = word;
+        });
+
+        if (currentLine) {
+          lines.push(currentLine);
+        }
+
+        return lines.slice(0, 3);
+      }
+
+      function buildMotifMarkup(motif, palette) {
+        switch (motif) {
+          case 'network':
+            return (
+              '<g opacity="0.34">' +
+              '<circle cx="915" cy="168" r="54" fill="' + palette.highlight + '" fill-opacity="0.14" />' +
+              '<circle cx="1038" cy="265" r="46" fill="' + palette.accent + '" fill-opacity="0.18" />' +
+              '<circle cx="868" cy="346" r="42" fill="#ffffff" fill-opacity="0.08" />' +
+              '<path d="M915 168L1038 265L868 346Z" fill="none" stroke="#ffffff" stroke-opacity="0.24" stroke-width="10" />' +
+              '</g>'
+            );
+          case 'continuity':
+            return (
+              '<g opacity="0.34">' +
+              '<path d="M836 170C908 108 1024 110 1091 176C1152 236 1162 339 1114 412" fill="none" stroke="' +
+              palette.highlight +
+              '" stroke-width="22" stroke-linecap="round" />' +
+              '<path d="M1099 414L1118 365L1156 413Z" fill="' + palette.highlight + '" />' +
+              '<path d="M1112 504C1040 566 924 564 857 498C796 438 786 335 834 262" fill="none" stroke="' +
+              palette.accent +
+              '" stroke-width="22" stroke-linecap="round" />' +
+              '<path d="M849 260L830 309L792 261Z" fill="' + palette.accent + '" />' +
+              '</g>'
+            );
+          case 'identity':
+            return (
+              '<g opacity="0.34">' +
+              '<circle cx="975" cy="190" r="74" fill="' + palette.highlight + '" fill-opacity="0.16" />' +
+              '<path d="M905 352C905 305 937 272 975 272C1013 272 1045 305 1045 352V392H905Z" fill="#ffffff" fill-opacity="0.08" />' +
+              '<rect x="918" y="324" width="114" height="118" rx="24" fill="' + palette.accent + '" fill-opacity="0.18" />' +
+              '<circle cx="975" cy="369" r="12" fill="#ffffff" fill-opacity="0.8" />' +
+              '<rect x="969" y="381" width="12" height="33" rx="6" fill="#ffffff" fill-opacity="0.8" />' +
+              '</g>'
+            );
+          case 'governance':
+            return (
+              '<g opacity="0.34">' +
+              '<rect x="860" y="132" width="230" height="298" rx="28" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.16" stroke-width="8" />' +
+              '<path d="M915 209H1034" stroke="' + palette.highlight + '" stroke-width="14" stroke-linecap="round" />' +
+              '<path d="M915 266H1034" stroke="' + palette.accent + '" stroke-width="14" stroke-linecap="round" />' +
+              '<path d="M915 323H995" stroke="#ffffff" stroke-opacity="0.45" stroke-width="14" stroke-linecap="round" />' +
+              '<circle cx="1048" cy="323" r="28" fill="' + palette.highlight + '" fill-opacity="0.18" />' +
+              '<path d="M1037 323L1045 331L1061 314" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />' +
+              '</g>'
+            );
+          case 'data':
+            return (
+              '<g opacity="0.34">' +
+              '<ellipse cx="976" cy="170" rx="118" ry="40" fill="' + palette.highlight + '" fill-opacity="0.18" />' +
+              '<path d="M858 170V360C858 382 911 400 976 400C1041 400 1094 382 1094 360V170" fill="#ffffff" fill-opacity="0.06" stroke="#ffffff" stroke-opacity="0.16" stroke-width="8" />' +
+              '<path d="M858 236C858 258 911 276 976 276C1041 276 1094 258 1094 236" fill="none" stroke="' + palette.accent + '" stroke-width="10" />' +
+              '<path d="M858 302C858 324 911 342 976 342C1041 342 1094 324 1094 302" fill="none" stroke="' + palette.highlight + '" stroke-width="10" />' +
+              '</g>'
+            );
+          case 'incident':
+            return (
+              '<g opacity="0.34">' +
+              '<path d="M975 122L1109 392H841Z" fill="' + palette.highlight + '" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.16" stroke-width="10" />' +
+              '<rect x="962" y="215" width="26" height="96" rx="13" fill="#ffffff" fill-opacity="0.82" />' +
+              '<circle cx="975" cy="348" r="16" fill="#ffffff" fill-opacity="0.82" />' +
+              '<circle cx="1088" cy="175" r="24" fill="' + palette.accent + '" fill-opacity="0.2" />' +
+              '</g>'
+            );
+          case 'shield':
+          default:
+            return (
+              '<g opacity="0.34">' +
+              '<path d="M976 120L1089 163V255C1089 334 1046 406 976 454C906 406 863 334 863 255V163Z" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.18" stroke-width="10" />' +
+              '<path d="M976 182C931 182 894 219 894 264C894 338 976 396 976 396C976 396 1058 338 1058 264C1058 219 1021 182 976 182Z" fill="' + palette.accent + '" fill-opacity="0.18" />' +
+              '<path d="M938 281L966 309L1018 246" fill="none" stroke="' + palette.highlight + '" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" />' +
+              '</g>'
+            );
+        }
+      }
+
+      function buildKeywordMarkup(keywords, palette) {
+        return (keywords || [])
+          .slice(0, 3)
+          .map((keyword, index) => {
+            const x = 72 + index * 178;
+            return (
+              '<g>' +
+              '<rect x="' +
+              x +
+              '" y="504" width="164" height="48" rx="24" fill="#ffffff" fill-opacity="0.08" stroke="' +
+              palette.accent +
+              '" stroke-opacity="0.28" />' +
+              '<text x="' +
+              (x + 82) +
+              '" y="534" fill="#ffffff" font-size="18" font-family="Segoe UI, sans-serif" text-anchor="middle">' +
+              escapeSvg(keyword) +
+              '</text>' +
+              '</g>'
+            );
+          })
+          .join('');
+      }
+
+      function renderSvgLines(lines, x, y, lineHeight, style) {
+        return lines
+          .map((line, index) => {
+            return (
+              '<text x="' +
+              x +
+              '" y="' +
+              (y + index * lineHeight) +
+              '" style="' +
+              style +
+              '">' +
+              escapeSvg(line) +
+              '</text>'
+            );
+          })
+          .join('');
+      }
+
+      function buildLinkedInGraphicSvg(spec) {
+        const palette = spec && spec.palette
+          ? spec.palette
+          : { backgroundStart: '#0c2238', backgroundEnd: '#133f63', accent: '#4bd38f', highlight: '#d5b15d' };
+        const headlineLines = wrapSvgText(spec && spec.headline ? spec.headline : 'CISSP Topic Focus', 22);
+        const subheadlineLines = wrapSvgText(spec && spec.subheadline ? spec.subheadline : '', 42);
+        const eyebrow = spec && spec.eyebrow ? spec.eyebrow : 'CISSP Topic Focus';
+        const keywords = spec && Array.isArray(spec.keywords) ? spec.keywords : [];
+        const motif = spec && spec.motif ? spec.motif : 'shield';
+
+        return (
+          '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="675" viewBox="0 0 1200 675" fill="none">' +
+          '<defs>' +
+          '<linearGradient id="bgGradient" x1="96" y1="88" x2="1094" y2="587" gradientUnits="userSpaceOnUse">' +
+          '<stop stop-color="' + palette.backgroundStart + '" />' +
+          '<stop offset="1" stop-color="' + palette.backgroundEnd + '" />' +
+          '</linearGradient>' +
+          '<radialGradient id="accentGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(965 232) rotate(141.411) scale(358 358)">' +
+          '<stop stop-color="' + palette.accent + '" stop-opacity="0.42" />' +
+          '<stop offset="1" stop-color="' + palette.accent + '" stop-opacity="0" />' +
+          '</radialGradient>' +
+          '<radialGradient id="highlightGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(266 552) rotate(45) scale(270 270)">' +
+          '<stop stop-color="' + palette.highlight + '" stop-opacity="0.28" />' +
+          '<stop offset="1" stop-color="' + palette.highlight + '" stop-opacity="0" />' +
+          '</radialGradient>' +
+          '</defs>' +
+          '<rect width="1200" height="675" rx="40" fill="url(#bgGradient)" />' +
+          '<rect x="24" y="24" width="1152" height="627" rx="32" fill="none" stroke="#ffffff" stroke-opacity="0.09" />' +
+          '<circle cx="974" cy="228" r="238" fill="url(#accentGlow)" />' +
+          '<circle cx="250" cy="562" r="190" fill="url(#highlightGlow)" />' +
+          '<path d="M94 112H1106" stroke="#ffffff" stroke-opacity="0.06" />' +
+          '<path d="M94 584H1106" stroke="#ffffff" stroke-opacity="0.06" />' +
+          buildMotifMarkup(motif, palette) +
+          '<text x="74" y="110" fill="' + palette.highlight + '" font-size="22" font-weight="700" letter-spacing="2.8" font-family="Segoe UI, sans-serif">' +
+          escapeSvg(eyebrow.toUpperCase()) +
+          '</text>' +
+          renderSvgLines(
+            headlineLines,
+            72,
+            208,
+            68,
+            'fill:#ffffff;font-size:58px;font-weight:800;font-family:Segoe UI, sans-serif'
+          ) +
+          renderSvgLines(
+            subheadlineLines,
+            76,
+            386,
+            34,
+            'fill:rgba(255,255,255,0.82);font-size:24px;font-weight:500;font-family:Segoe UI, sans-serif'
+          ) +
+          buildKeywordMarkup(keywords, palette) +
+          '<g transform="translate(72 588)">' +
+          '<rect width="360" height="58" rx="20" fill="#081521" fill-opacity="0.42" />' +
+          '<image href="' + APP_LOGO_DATA_URL + '" x="18" y="11" width="36" height="36" preserveAspectRatio="xMidYMid meet" />' +
+          '<text x="68" y="28" fill="#ffffff" font-size="20" font-weight="700" font-family="Segoe UI, sans-serif">Johnny Avakian&apos;s CISSP Buddy</text>' +
+          '<text x="68" y="46" fill="rgba(255,255,255,0.68)" font-size="14" font-family="Segoe UI, sans-serif">Study smarter. Explain better. Succeed with confidence.</text>' +
+          '</g>' +
+          '<text x="1118" y="620" fill="rgba(255,255,255,0.52)" font-size="16" text-anchor="end" font-family="Segoe UI, sans-serif">LinkedIn study graphic</text>' +
+          '</svg>'
+        );
+      }
+
+      function buildLinkedInGraphicDataUrl(spec) {
+        const cacheKey = JSON.stringify(spec || {});
+        if (linkedInGraphicCache.has(cacheKey)) {
+          return linkedInGraphicCache.get(cacheKey);
+        }
+
+        const dataUrl =
+          'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(buildLinkedInGraphicSvg(spec));
+        linkedInGraphicCache.set(cacheKey, dataUrl);
+        return dataUrl;
+      }
+
+      function createLinkedInGraphicPngDataUrl(spec) {
+        const svgMarkup = buildLinkedInGraphicSvg(spec);
+        const svgBlob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1200;
+            canvas.height = 675;
+            const context = canvas.getContext('2d');
+
+            if (!context) {
+              URL.revokeObjectURL(svgUrl);
+              reject(new Error('Canvas context unavailable.'));
+              return;
+            }
+
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            URL.revokeObjectURL(svgUrl);
+            resolve(canvas.toDataURL('image/png'));
+          };
+
+          image.onerror = () => {
+            URL.revokeObjectURL(svgUrl);
+            reject(new Error('Unable to render the LinkedIn graphic.'));
+          };
+
+          image.src = svgUrl;
+        });
+      }
+
       function selectedQuestionCount() {
         return Number(questionCountSelect.value || state.selectedQuestionCount || MIN_QUIZ_QUESTIONS);
       }
@@ -1581,6 +1868,7 @@ F5</div>
         transcriptElement.innerHTML = state.transcript
           .map((entry, index) => {
             if (entry.kind === 'linkedinDraft') {
+              const graphicDataUrl = buildLinkedInGraphicDataUrl(entry.visualSpec);
               return (
                 '<article class="message">' +
                 '<div class="message__bubble">' +
@@ -1591,14 +1879,16 @@ F5</div>
                 '</span>' +
                 '</div>' +
                 '<div class="message__linkedin">' +
-                '<img class="message__linkedin-hero" src="' +
-                HERO_IMAGE_URL +
-                '" alt="CISSP Buddy hero image" />' +
+                '<img class="message__linkedin-visual" src="' +
+                graphicDataUrl +
+                '" alt="' +
+                escapeHtml(entry.imageAlt || 'Topic-specific LinkedIn graphic') +
+                '" />' +
                 '<div>' +
                 '<p class="message__linkedin-topic">' +
                 escapeHtml(entry.topic || 'CISSP Topic') +
                 '</p>' +
-                '<h3 class="message__linkedin-title">LinkedIn Post Ready To Review</h3>' +
+                '<h3 class="message__linkedin-title">LinkedIn Post And Graphic Ready To Review</h3>' +
                 '</div>' +
                 '<pre class="message__content">' +
                 escapeHtml(entry.text) +
@@ -1607,9 +1897,9 @@ F5</div>
                 '<button class="button--secondary" type="button" data-download-linkedin="' +
                 index +
                 '">Download Post</button>' +
-                '<button class="button--ghost" type="button" data-download-hero="' +
+                '<button class="button--ghost" type="button" data-download-linkedin-graphic="' +
                 index +
-                '">Download Hero Image</button>' +
+                '">Download Image</button>' +
                 '</div>' +
                 '</div>' +
                 '</div>' +
@@ -1653,7 +1943,7 @@ F5</div>
             state.linkedinDraft.topic +
             '" on ' +
             state.linkedinDraft.generatedAt +
-            '. View it in the answer area and use the download buttons there.';
+            '. View the post and topic-specific image in the answer area and use the download buttons there.';
           return;
         }
 
@@ -1730,7 +2020,7 @@ F5</div>
 
         const linkedInHint = quizAwaitingAnswer
           ? 'Quiz in progress. Type your answer with A, B, C, or D before generating a LinkedIn post.'
-          : 'Generate a LinkedIn draft from the current topic or the most recent completed quiz topic.';
+          : 'Generate a LinkedIn draft and a topic-specific visual from the last studied topic or the current composer topic.';
 
         generateLinkedInToolbarButton.title = linkedInHint;
         generateLinkedInButton.title = linkedInHint;
@@ -1845,9 +2135,24 @@ F5</div>
           return;
         }
 
-        const heroButton = event.target.closest('[data-download-hero]');
-        if (heroButton) {
-          vscode.postMessage({ type: 'downloadHeroImage' });
+        const graphicButton = event.target.closest('[data-download-linkedin-graphic]');
+        if (graphicButton) {
+          const index = Number(graphicButton.getAttribute('data-download-linkedin-graphic'));
+          const entry = state.transcript[index];
+          if (entry && entry.kind === 'linkedinDraft' && entry.visualSpec) {
+            createLinkedInGraphicPngDataUrl(entry.visualSpec)
+              .then((dataUrl) => {
+                vscode.postMessage({
+                  type: 'downloadLinkedInGraphic',
+                  topic: entry.topic || 'cissp-topic',
+                  dataUrl
+                });
+              })
+              .catch(() => {
+                linkedinMetaElement.textContent =
+                  'CISSP Buddy could not render that LinkedIn image for download. Generate it again and retry.';
+              });
+          }
         }
       });
 
@@ -1924,6 +2229,20 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .replace(/-{2,}/g, '-');
+}
+
+function readPngDataUrl(uri: vscode.Uri): string {
+  const fileBytes = fs.readFileSync(uri.fsPath);
+  return `data:image/png;base64,${fileBytes.toString('base64')}`;
+}
+
+function decodePngDataUrl(dataUrl: string): Uint8Array | undefined {
+  const match = dataUrl.match(/^data:image\/png;base64,(.+)$/);
+  if (!match) {
+    return undefined;
+  }
+
+  return Uint8Array.from(Buffer.from(match[1], 'base64'));
 }
 
 function getNonce(): string {

@@ -28,6 +28,7 @@ The standalone app design creates room for product features that do not fit well
 - detailed wrong-answer configuration
 - PDF export
 - LinkedIn draft generation
+- AI-designed topic graphics for LinkedIn-ready study sharing
 - in-app documentation
 - branding, website links, support links, and community calls to action
 

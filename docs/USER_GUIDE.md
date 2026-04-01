@@ -57,10 +57,10 @@ If a quiz question is currently waiting for your answer, the LinkedIn button cha
 
 When a draft is generated, the answer area shows:
 
-- the branded `hero.png`
+- a topic-specific LinkedIn image generated for the studied concept
 - the LinkedIn post text
 - a download button for the post
-- a download button for the hero image
+- a download button for the LinkedIn image
 
 ### In-App Documentation
 
@@ -160,6 +160,7 @@ The draft is intended to be:
 - professional
 - LinkedIn-friendly
 - consistent with the product branding
+- paired with a branded topic image that includes CISSP Buddy identity without reusing a static banner
 
 The generated post is not auto-published. Review it in the answer area, download it if you want to save it, then paste it into LinkedIn yourself.
 

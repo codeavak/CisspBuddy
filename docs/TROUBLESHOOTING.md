@@ -31,7 +31,7 @@ If something is not working, check these first:
 ### Reinstall Command
 
 ```bash
-code --install-extension cissp-buddy-0.0.18.vsix --force
+code --install-extension cissp-buddy-0.0.19.vsix --force
 ```
 
 ## The App Opens But Responses Never Arrive

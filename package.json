@@ -1,0 +1,60 @@
+{
+  "name": "cissp-buddy",
+  "displayName": "CISSP Buddy",
+  "description": "A VS Code chat participant that explains CISSP topics and quizzes you with one exam-style question.",
+  "version": "0.0.1",
+  "publisher": "codeavak",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/codeavak/CisspBuddy.git"
+  },
+  "engines": {
+    "vscode": "^1.110.0"
+  },
+  "categories": [
+    "Chat"
+  ],
+  "activationEvents": [
+    "onChatParticipant:cisspbuddy.cissp-buddy"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "chatParticipants": [
+      {
+        "id": "cisspbuddy.cissp-buddy",
+        "name": "cissp-buddy",
+        "fullName": "CISSP Buddy",
+        "description": "Explain CISSP concepts and follow up with one exam-style multiple-choice question.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "cissp-buddy",
+            "description": "Start a CISSP explanation and practice question."
+          }
+        ],
+        "disambiguation": [
+          {
+            "category": "learning",
+            "description": "Use this for CISSP concepts, security domains, and exam-style practice.",
+            "examples": [
+              "Explain least privilege for CISSP.",
+              "What is due care vs due diligence?",
+              "Quiz me on business continuity."
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.110.0",
+    "typescript": "^6.0.2"
+  }
+}

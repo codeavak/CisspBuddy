@@ -1367,6 +1367,7 @@ F5</div>
     </div>
 
     <script nonce="${nonce}">
+      const BRAND_NAME_TEXT = ${JSON.stringify(BRAND_NAME)};
       const MIN_QUIZ_QUESTIONS = ${MIN_QUIZ_QUESTIONS};
       const MAX_QUIZ_QUESTIONS = ${MAX_QUIZ_QUESTIONS};
 
@@ -1459,7 +1460,9 @@ F5</div>
         if (state.transcript.length === 0) {
           transcriptElement.innerHTML =
             '<section class="empty-state">' +
-            '<h2>${BRAND_NAME} is ready.</h2>' +
+            '<h2>' +
+            escapeHtml(BRAND_NAME_TEXT) +
+            ' is ready.</h2>' +
             '<p>Choose a quiz length, ask a CISSP topic, and the app will explain the concept and guide you through however many questions you selected. Afterward, generate a LinkedIn post and export the transcript if you want a showcase artifact.</p>' +
             '</section>';
           return;

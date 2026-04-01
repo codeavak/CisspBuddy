@@ -40,7 +40,7 @@ type WebviewMessage =
   | { type: 'resetTranscript' }
   | { type: 'openExternal'; url: string };
 
-const BRAND_NAME = 'Johnny Avakian Presents CISSP Buddy';
+const BRAND_NAME = 'Johnny Avakian\'s CISSP Buddy';
 const PORTFOLIO_URL = 'https://codeavak.github.io/portfolio_website/';
 const LINKEDIN_URL = 'https://www.linkedin.com/in/codeavak';
 const REPO_URL = 'https://github.com/codeavak/cisspbuddy';
@@ -627,7 +627,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
       content="default-src 'none'; img-src ${webview.cspSource} data:; style-src ${webview.cspSource} 'nonce-${nonce}'; script-src 'nonce-${nonce}';"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Johnny Avakian Presents CISSP Buddy</title>
+    <title>Johnny Avakian's CISSP Buddy</title>
     <style nonce="${nonce}">
       :root {
         color-scheme: light dark;
@@ -1160,7 +1160,7 @@ export class CisspBuddyPanel implements vscode.Disposable {
         <div class="hero__brand">
           <img class="hero__logo" src="${logoUri}" alt="CISSP Buddy logo" />
           <div>
-            <p class="hero__eyebrow">Johnny Avakian Presents</p>
+            <p class="hero__eyebrow">Johnny Avakian's</p>
             <h1 class="hero__title">CISSP Buddy</h1>
             <p class="hero__subtitle">
               A portfolio-grade CISSP study experience inside VS Code. Learn the topic,

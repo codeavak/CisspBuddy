@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Johnny Avakian Presents CISSP Buddy is designed as both a practical CISSP study tool and a portfolio-quality engineering artifact. The product goals are:
+Johnny Avakian's CISSP Buddy is designed as both a practical CISSP study tool and a portfolio-quality engineering artifact. The product goals are:
 
 - deliver a polished in-editor study workflow instead of a basic AI chat transcript
 - keep the AI experience tightly scoped to CISSP and defensive security concepts

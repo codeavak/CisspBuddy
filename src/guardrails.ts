@@ -118,7 +118,7 @@ function includesAnyKeyword(haystack: string, keywords: readonly string[]): bool
 
 function buildOutOfScopeResponse(): string {
   return [
-    'Johnny Avakian Presents CISSP Buddy is scoped to CISSP study and defensive security concepts.',
+    'Johnny Avakian\'s CISSP Buddy is scoped to CISSP study and defensive security concepts.',
     '',
     'Try asking about one of the CISSP domains, a security principle, or a practice question instead.'
   ].join('\n');
@@ -197,7 +197,7 @@ export function evaluatePrompt(
     return {
       allowed: false,
       response: [
-        'Johnny Avakian Presents CISSP Buddy stays on safe, defensive CISSP study help.',
+        'Johnny Avakian\'s CISSP Buddy stays on safe, defensive CISSP study help.',
         '',
         'I cannot help with offensive or harmful cyber instructions.',
         'If you want, ask about the defensive principles, risk implications, or exam concepts behind that topic instead.'

@@ -16,7 +16,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const panel = CisspBuddyPanel.current();
       if (!panel) {
         await vscode.window.showInformationMessage(
-          'Open Johnny Avakian Presents CISSP Buddy first, then export the transcript from there.'
+          'Open Johnny Avakian\'s CISSP Buddy first, then export the transcript from there.'
         );
         return;
       }
@@ -40,13 +40,13 @@ export function activate(context: vscode.ExtensionContext): void {
     if (launchPrompt) {
       void panel.ask(launchPrompt);
       stream.markdown(
-        'Opened Johnny Avakian Presents CISSP Buddy in a standalone editor tab and sent your topic there.'
+        'Opened Johnny Avakian\'s CISSP Buddy in a standalone editor tab and sent your topic there.'
       );
       return;
     }
 
     stream.markdown(
-      'Opened Johnny Avakian Presents CISSP Buddy in a standalone editor tab. Continue there.'
+      'Opened Johnny Avakian\'s CISSP Buddy in a standalone editor tab. Continue there.'
     );
   };
 

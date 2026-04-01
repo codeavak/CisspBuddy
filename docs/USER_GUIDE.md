@@ -2,7 +2,7 @@
 
 ## What CISSP Buddy Does
 
-Johnny Avakian Presents CISSP Buddy is a guided CISSP study application inside Visual Studio Code. It is not a general-purpose chatbot. It is designed to:
+Johnny Avakian's CISSP Buddy is a guided CISSP study application inside Visual Studio Code. It is not a general-purpose chatbot. It is designed to:
 
 - explain CISSP topics in exam-friendly language
 - quiz the user on the topic
@@ -16,7 +16,7 @@ Johnny Avakian Presents CISSP Buddy is a guided CISSP study application inside V
 You can open the app in either of these ways:
 
 1. Command Palette
-   - Run `Johnny Avakian Presents CISSP Buddy: Open Study App`
+   - Run `Johnny Avakian's CISSP Buddy: Open Study App`
 
 2. GitHub Copilot Chat
    - Type `/cissp-buddy`

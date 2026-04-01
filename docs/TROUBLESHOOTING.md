@@ -22,7 +22,7 @@ If something is not working, check these first:
 ### Checks
 
 - Open the Command Palette and search for:
-  - `Johnny Avakian Presents CISSP Buddy: Open Study App`
+  - `Johnny Avakian's CISSP Buddy: Open Study App`
 - If it is missing:
   - confirm the extension is installed
   - reload VS Code with `Developer: Reload Window`

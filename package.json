@@ -1,8 +1,8 @@
 {
   "name": "cissp-buddy",
-  "displayName": "Johnny Avakian Presents CISSP Buddy",
-  "description": "Johnny Avakian presents a portfolio-grade VS Code CISSP study app with a floating study composer, shorthand topic resolution, visible LinkedIn controls, guided quizzes, detailed wrong-answer review, PDF export, defensive guardrails, and complete documentation.",
-  "version": "0.0.11",
+  "displayName": "Johnny Avakian's CISSP Buddy",
+  "description": "Johnny Avakian presents a VS Code CISSP study app with a floating study composer, shorthand topic resolution, visible LinkedIn controls, guided quizzes, detailed wrong-answer review, PDF export, defensive guardrails, and complete documentation.",
+  "version": "0.0.12",
   "publisher": "codeavak",
   "icon": "media/cissp-buddy-icon.png",
   "license": "MIT",
@@ -33,18 +33,18 @@
     "commands": [
       {
         "command": "cisspBuddy.openApp",
-        "title": "Johnny Avakian Presents CISSP Buddy: Open Study App"
+        "title": "Johnny Avakian's CISSP Buddy: Open Study App"
       },
       {
         "command": "cisspBuddy.exportTranscriptPdf",
-        "title": "Johnny Avakian Presents CISSP Buddy: Export Transcript as PDF"
+        "title": "Johnny Avakian's CISSP Buddy: Export Transcript as PDF"
       }
     ],
     "chatParticipants": [
       {
         "id": "cisspbuddy.cissp-buddy",
         "name": "cissp-buddy",
-        "fullName": "Johnny Avakian Presents CISSP Buddy",
+        "fullName": "Johnny Avakian's CISSP Buddy",
         "description": "Open Johnny Avakian's standalone CISSP Buddy study app inside VS Code.",
         "isSticky": true,
         "commands": [

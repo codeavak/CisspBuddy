@@ -1,6 +1,6 @@
-# Johnny Avakian Presents CISSP Buddy
+# Johnny Avakian's CISSP Buddy
 
-Johnny Avakian Presents CISSP Buddy is a portfolio-grade Visual Studio Code extension that turns GitHub Copilot into a branded CISSP study experience. It opens as a standalone app inside VS Code, explains CISSP topics in exam-friendly language, runs guided multi-question quizzes, exports transcripts to PDF, and generates showcase-ready LinkedIn posts from the topic you studied.
+Johnny Avakian's CISSP Buddy is a portfolio-grade Visual Studio Code extension that turns GitHub Copilot into a branded CISSP study experience. It opens as a standalone app inside VS Code, explains CISSP topics in exam-friendly language, runs guided multi-question quizzes, exports transcripts to PDF, and generates showcase-ready LinkedIn posts from the topic you studied.
 
 ## What This Project Demonstrates
 
@@ -56,7 +56,7 @@ npm run compile
 
 5. Open the app in the development host:
 
-- Command Palette: `Johnny Avakian Presents CISSP Buddy: Open Study App`
+- Command Palette: `Johnny Avakian's CISSP Buddy: Open Study App`
 - Or in Copilot Chat: `/cissp-buddy`
 
 ### Packaging And Local Install

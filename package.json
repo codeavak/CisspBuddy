@@ -1,8 +1,8 @@
 {
   "name": "cissp-buddy",
   "displayName": "CISSP Buddy",
-  "description": "A VS Code chat participant that explains CISSP topics and quizzes you with one exam-style question.",
-  "version": "0.0.1",
+  "description": "A standalone VS Code CISSP study app that explains topics, quizzes you, and exports transcripts to PDF.",
+  "version": "0.0.2",
   "publisher": "codeavak",
   "license": "MIT",
   "repository": {
@@ -22,31 +22,43 @@
     "LICENSE"
   ],
   "activationEvents": [
-    "onChatParticipant:cisspbuddy.cissp-buddy"
+    "onChatParticipant:cisspbuddy.cissp-buddy",
+    "onCommand:cisspBuddy.openApp",
+    "onCommand:cisspBuddy.exportTranscriptPdf"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "cisspBuddy.openApp",
+        "title": "CISSP Buddy: Open Study App"
+      },
+      {
+        "command": "cisspBuddy.exportTranscriptPdf",
+        "title": "CISSP Buddy: Export Transcript as PDF"
+      }
+    ],
     "chatParticipants": [
       {
         "id": "cisspbuddy.cissp-buddy",
         "name": "cissp-buddy",
         "fullName": "CISSP Buddy",
-        "description": "Explain CISSP concepts and follow up with one exam-style multiple-choice question.",
+        "description": "Open the standalone CISSP Buddy study app inside VS Code.",
         "isSticky": true,
         "commands": [
           {
             "name": "cissp-buddy",
-            "description": "Start a CISSP explanation and practice question."
+            "description": "Open the CISSP Buddy app and optionally send it a topic."
           }
         ],
         "disambiguation": [
           {
             "category": "learning",
-            "description": "Use this for CISSP concepts, security domains, and exam-style practice.",
+            "description": "Use this to launch the CISSP Buddy study app for CISSP concepts and practice questions.",
             "examples": [
-              "Explain least privilege for CISSP.",
-              "What is due care vs due diligence?",
-              "Quiz me on business continuity."
+              "Open CISSP Buddy and explain least privilege.",
+              "Launch CISSP Buddy with due care vs due diligence.",
+              "Start CISSP Buddy and quiz me on business continuity."
             ]
           }
         ]

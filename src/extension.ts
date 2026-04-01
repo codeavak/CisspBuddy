@@ -1,96 +1,49 @@
 import * as vscode from 'vscode';
 
+import { CisspBuddyPanel } from './panel';
+import { buildLaunchPrompt } from './prompts';
+
 const PARTICIPANT_ID = 'cisspbuddy.cissp-buddy';
 
-const BASE_PROMPT = [
-  'You are CISSP Buddy, a focused CISSP study coach.',
-  'Help the user understand CISSP concepts with clear, concise explanations that reflect the exam mindset.',
-  'After every concept explanation, ask exactly one CISSP-style multiple-choice question with four options labeled A, B, C, and D.',
-  'There must be exactly one best answer.',
-  'End quiz turns by inviting the user to reply with A, B, C, or D.',
-  'If the user responds with an answer to the previous question, grade it first, explain the correct answer in CISSP terms, explain briefly why the other options are weaker, and then ask one new question.',
-  'Keep the tone encouraging and exam-focused.',
-  'Prefer short sections and bullets over long essays.',
-  'Do not answer non-CISSP topics beyond a brief redirection back to CISSP study.'
-].join(' ');
-
-function buildCurrentTurnPrompt(request: vscode.ChatRequest): string {
-  const rawPrompt = request.prompt.trim();
-
-  if (request.command === 'cissp-buddy' && rawPrompt.length === 0) {
-    return [
-      'Start a CISSP study round.',
-      'Pick a high-value CISSP topic, explain it simply, and then ask one exam-style multiple-choice question.'
-    ].join(' ');
-  }
-
-  return [
-    'Respond to this CISSP study request and maintain the quiz flow described earlier.',
-    rawPrompt
-  ].join('\n\n');
-}
-
-function historyToMessages(
-  history: readonly (vscode.ChatRequestTurn | vscode.ChatResponseTurn)[]
-): vscode.LanguageModelChatMessage[] {
-  const messages: vscode.LanguageModelChatMessage[] = [];
-
-  for (const turn of history) {
-    if (turn instanceof vscode.ChatRequestTurn) {
-      const prompt = turn.prompt.trim();
-      if (prompt.length > 0) {
-        messages.push(vscode.LanguageModelChatMessage.User(prompt));
-      }
-      continue;
-    }
-
-    if (turn instanceof vscode.ChatResponseTurn) {
-      let responseText = '';
-
-      for (const part of turn.response) {
-        if (part instanceof vscode.ChatResponseMarkdownPart) {
-          responseText += part.value.value;
-        }
-      }
-
-      if (responseText.trim().length > 0) {
-        messages.push(vscode.LanguageModelChatMessage.Assistant(responseText));
-      }
-    }
-  }
-
-  return messages;
-}
-
 export function activate(context: vscode.ExtensionContext): void {
+  context.subscriptions.push(
+    vscode.commands.registerCommand('cisspBuddy.openApp', async () => {
+      CisspBuddyPanel.createOrShow();
+    }),
+    vscode.commands.registerCommand('cisspBuddy.exportTranscriptPdf', async () => {
+      const panel = CisspBuddyPanel.current();
+      if (!panel) {
+        await vscode.window.showInformationMessage(
+          'Open CISSP Buddy first, then export the transcript from there.'
+        );
+        return;
+      }
+
+      await panel.exportTranscript();
+    })
+  );
+
   const handler: vscode.ChatRequestHandler = async (
     request,
-    chatContext,
+    _chatContext,
     stream,
-    token
+    _token
   ) => {
-    const messages: vscode.LanguageModelChatMessage[] = [
-      vscode.LanguageModelChatMessage.User(BASE_PROMPT),
-      ...historyToMessages(chatContext.history),
-      vscode.LanguageModelChatMessage.User(buildCurrentTurnPrompt(request))
-    ];
+    const panel = CisspBuddyPanel.createOrShow();
+    const launchPrompt = buildLaunchPrompt(
+      request.prompt,
+      request.command === 'cissp-buddy'
+    );
 
-    try {
-      const response = await request.model.sendRequest(messages, {}, token);
-
-      for await (const fragment of response.text) {
-        stream.markdown(fragment);
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+    if (launchPrompt) {
+      void panel.ask(launchPrompt);
       stream.markdown(
-        [
-          'CISSP Buddy could not reach the selected chat model.',
-          '',
-          `Error: ${message}`
-        ].join('\n')
+        'Opened CISSP Buddy in a standalone editor tab and sent your topic there.'
       );
+      return;
     }
+
+    stream.markdown('Opened CISSP Buddy in a standalone editor tab. Continue there.');
   };
 
   const participant = vscode.chat.createChatParticipant(PARTICIPANT_ID, handler);
@@ -99,16 +52,16 @@ export function activate(context: vscode.ExtensionContext): void {
     provideFollowups() {
       return [
         {
-          prompt: 'Explain due care vs due diligence and quiz me.',
-          label: 'Due care vs due diligence'
+          prompt: 'Open CISSP Buddy and explain due care vs due diligence.',
+          label: 'Launch due care topic'
         },
         {
-          prompt: 'Quiz me on security architecture and design.',
-          label: 'Security architecture quiz'
+          prompt: 'Launch CISSP Buddy with a security architecture quiz.',
+          label: 'Open architecture quiz'
         },
         {
-          prompt: 'Explain business continuity planning and ask one question.',
-          label: 'Business continuity'
+          prompt: 'Start CISSP Buddy and explain business continuity planning.',
+          label: 'Open continuity topic'
         }
       ];
     }
@@ -118,4 +71,3 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {}
-
